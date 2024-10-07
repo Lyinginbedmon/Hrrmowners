@@ -1,0 +1,38 @@
+{
+	"schemaVersion": 1,
+	"id": "hrrmowners",
+	"version": "${version}",
+	"name": "Hrrmowners",
+	"description": "This is an example description! Tell everyone what your mod is about!",
+	"authors": [
+		"Lying"
+	],
+	"contact": {
+		"homepage": "https://lyinginbedmon.carrd.co/",
+		"sources": "https://github.com/Lyinginbedmon/Hrrmowners"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/hrrmowners/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.lying.fabric.HrrmownersFabric"
+		],
+		"client": [
+			"com.lying.fabric.client.HrrmownersFabricClient"
+		]
+	},
+	"mixins": [
+		"hrrmowners.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.16.5",
+		"minecraft": "~1.21",
+		"java": ">=21",
+		"architectury": ">=13.0.2",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}
