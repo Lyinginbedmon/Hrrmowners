@@ -11,6 +11,8 @@ import net.minecraft.client.render.entity.feature.FeatureRendererContext;
 import net.minecraft.client.render.entity.model.EntityModelLoader;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
+import net.minecraft.village.VillagerData;
+import net.minecraft.village.VillagerProfession;
 
 public class SurinaCloakFeatureRenderer<T extends SurinaEntity> extends FeatureRenderer<T, SurinaEntityModel<T>>
 {
@@ -24,14 +26,18 @@ public class SurinaCloakFeatureRenderer<T extends SurinaEntity> extends FeatureR
 	
 	public void render(MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, T surinaEntity, float f, float g, float h, float j, float k, float l)
 	{
+		VillagerData data = surinaEntity.getVillagerData();
+		if(data.getProfession() == VillagerProfession.NONE)
+			return;
+		
 		SurinaEntityModel<T> contextModel = getContextModel();
 		contextModel.copyStateTo(model);
 		contextModel.copyPoseTo(model);
-		renderModel(model, getCloakTexture(surinaEntity), matrixStack, vertexConsumerProvider, i, surinaEntity, -1);
+		renderModel(model, getCloakTexture(data.getProfession()), matrixStack, vertexConsumerProvider, i, surinaEntity, -1);
 	}
 	
-	public static Identifier getCloakTexture(SurinaEntity surina)
+	public static Identifier getCloakTexture(VillagerProfession profession)
 	{
-		return Reference.ModInfo.prefix("textures/entity/surina/nitwit.png");
+		return Reference.ModInfo.prefix("textures/entity/surina/"+profession.id().toLowerCase()+".png");
 	}
 }

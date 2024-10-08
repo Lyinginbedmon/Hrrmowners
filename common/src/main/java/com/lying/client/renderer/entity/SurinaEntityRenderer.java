@@ -27,5 +27,9 @@ public class SurinaEntityRenderer extends MobEntityRenderer<SurinaEntity, Surina
 		this.addFeature(new SurinaCloakFeatureRenderer<SurinaEntity>(this, ctx.getModelLoader()));
 	}
 	
-	public Identifier getTexture(SurinaEntity var1) { return TEXTURE; }
+	public Identifier getTexture(SurinaEntity var1)
+	{
+		// TODO Add Badlands texture
+		return TEXTURE;
+	}
 }

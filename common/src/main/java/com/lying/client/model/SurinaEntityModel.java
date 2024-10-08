@@ -95,7 +95,8 @@ public class SurinaEntityModel<T extends SurinaEntity> extends SinglePartEntityM
 		ModelPartData root2 = modelPartData.addChild(EntityModelPartNames.ROOT, ModelPartBuilder.create(), ModelTransform.pivot(0.0F, 24.0F, 0.0F));
 		
 		ModelPartData head2 = root2.addChild(EntityModelPartNames.HEAD, ModelPartBuilder.create(), ModelTransform.pivot(0.0F, -24.75F, -2.75F));
-			head2.addChild("cube_r1", ModelPartBuilder.create().uv(24, 0).cuboid(-5.0F, -7.0F, -3.0F, 6.0F, 7.0F, 6.0F, dilation.add(0.5F))
+			head2.addChild("cube_r1", ModelPartBuilder.create()
+				.uv(24, 0).cuboid(-5.0F, -7.0F, -3.0F, 6.0F, 7.0F, 6.0F, dilation.add(0.5F))
 				.uv(0, 0).cuboid(-5.0F, -7.0F, -3.0F, 6.0F, 7.0F, 6.0F, dilation.add(0.25F)), ModelTransform.of(2.0F, 0.4371F, -0.3485F, 0.3054F, 0.0F, 0.0F));
 			head2.addChild(ANTENNA_LEFT, ModelPartBuilder.create(), ModelTransform.of(1.25F, -6.5F, -1.25F, -0.9997F, 0.1103F, 0.0706F));
 			head2.addChild(ANTENNA_RIGHT, ModelPartBuilder.create(), ModelTransform.of(-1.25F, -6.5F, -1.25F, -0.9997F, -0.1103F, -0.0706F));
@@ -142,8 +143,8 @@ public class SurinaEntityModel<T extends SurinaEntity> extends SinglePartEntityM
 		this.leftArm.pitch = MathHelper.cos(limbSwing * 0.6662f) * 2.0f * limbSwingAmount * 0.5f / f;
 		this.rightArm.roll = 0.0f;
 		this.leftArm.roll = 0.0f;
-		this.rightLeg.pitch = MathHelper.cos(limbSwing * 0.6662f) * 1.4f * limbSwingAmount / f;
-		this.leftLeg.pitch = MathHelper.cos(limbSwing * 0.6662f + (float)Math.PI) * 1.4f * limbSwingAmount / f;
+		this.rightLeg.pitch = MathHelper.cos(limbSwing * 0.6662f) * (float)Math.toRadians(30D) * limbSwingAmount / f;
+		this.leftLeg.pitch = MathHelper.cos(limbSwing * 0.6662f + (float)Math.PI) * (float)Math.toRadians(30D) * limbSwingAmount / f;
 		this.rightLeg.yaw = 0.005f;
 		this.leftLeg.yaw = -0.005f;
 		this.rightLeg.roll = 0.005f;
