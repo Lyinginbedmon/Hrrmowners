@@ -16,9 +16,9 @@ import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 
-public class ShowCubesPacket
+public class HideCubesPacket
 {
-	private static final Identifier PACKET_ID = HOPacketHandler.SHOW_CUBE_ID;
+	private static final Identifier PACKET_ID = HOPacketHandler.HIDE_CUBE_ID;
 	public static final CustomPayload.Id<Payload> PACKET_TYPE = new CustomPayload.Id<>(PACKET_ID);
 	public static final PacketCodec<RegistryByteBuf, Payload> PACKET_CODEC = CustomPayload.codecOf(Payload::write, Payload::new);
 	

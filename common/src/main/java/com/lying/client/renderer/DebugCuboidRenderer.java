@@ -5,53 +5,61 @@ import java.util.List;
 import org.joml.Vector3f;
 
 import com.google.common.collect.Lists;
-import com.lying.utility.VillageComponent;
+import com.lying.utility.DebugCuboid;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.WorldRenderer;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
-public class VillageRenderer
+public class DebugCuboidRenderer
 {
 	private static final MinecraftClient mc = MinecraftClient.getInstance();
-	private final List<VillageComponent> renderables = Lists.newArrayList();
+	private final List<DebugCuboid> renderables = Lists.newArrayList();
 	
 	public void tick()
 	{
 		if(mc.world == null || renderables.isEmpty())
 			return;
 		
-		// Do any update stuff
+		// Do any client-side update stuff
 	}
 	
-	public void render(VertexConsumer consumer)
+	public void render(VertexConsumer consumer, Vec3d cameraPos, VertexConsumerProvider vertexConsumerProvider)
 	{
-		renderables.forEach(box -> renderComponent(box, consumer, mc.player));
+		renderables.forEach(box -> renderComponent(box, consumer, cameraPos, vertexConsumerProvider));
 	}
 	
 	public int size() { return renderables.size(); }
 	
-	public void add(VillageComponent... renderable)
+	public void add(DebugCuboid... renderable)
 	{
-		for(VillageComponent render : renderable)
+		for(DebugCuboid render : renderable)
 			renderables.add(render);
+	}
+	
+	public void remove(DebugCuboid... renderable)
+	{
+		for(DebugCuboid render : renderable)
+			renderables.removeIf(cube -> cube.matches(render));
 	}
 	
 	public void clear() { renderables.clear(); }
 	
-	private static void renderComponent(VillageComponent comp, VertexConsumer consumer, PlayerEntity player)
+	private static void renderComponent(DebugCuboid comp, VertexConsumer consumer, Vec3d cameraPos, VertexConsumerProvider vertexConsumerProvider)
 	{
+		if(!comp.core().isWithinDistance(cameraPos, 32))
+			return;
+		
 		BlockPos min = comp.min();
 		BlockPos max = comp.max();
 		
-		Vec3d viewerPos = player.getPos();
-		Vec3d minVec = new Vec3d(min.getX(), min.getY(), min.getZ()).subtract(viewerPos);
-		Vec3d maxVec = new Vec3d(max.getX() + 1, max.getY() + 1, max.getZ() + 1).subtract(viewerPos);
-		
 		Vector3f colour = decimalToVector(comp.type().color());
+		
+		Vec3d minVec = new Vec3d(min.getX(), min.getY(), min.getZ()).subtract(cameraPos);
+		Vec3d maxVec = new Vec3d(max.getX() + 1, max.getY() + 1, max.getZ() + 1).subtract(cameraPos);
 		WorldRenderer.drawBox(consumer, minVec.x, minVec.y, minVec.z, maxVec.x, maxVec.y, maxVec.z, colour.x, colour.y, colour.z, 1F);
 	}
 	

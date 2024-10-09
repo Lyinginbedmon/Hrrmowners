@@ -1,4 +1,4 @@
-package com.lying.client.renderer;
+package com.lying.client.renderer.feature;
 
 import com.lying.client.init.HOModelLayerParts;
 import com.lying.client.model.SurinaEntityModel;

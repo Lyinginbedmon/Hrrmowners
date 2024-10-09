@@ -2,6 +2,7 @@
 	// Mod info
 	"itemGroup.hrrmowners.item_group": "Hrrmowners",
 	// Items
+	"item.hrrmowners.surina_spawn_egg": "Spawn Surina",
 	// Blocks
 	// Entities
 	"entity.hrrmowners.surina": "Surina"

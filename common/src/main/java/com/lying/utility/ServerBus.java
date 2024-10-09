@@ -4,35 +4,48 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+
 import com.google.common.collect.Lists;
 import com.lying.Hrrmowners;
+import com.lying.entity.village.PartType;
 import com.lying.network.ShowCubesPacket;
-import com.lying.utility.VillageComponent.Type;
+import com.lying.reference.Reference;
 
 import dev.architectury.event.events.common.PlayerEvent;
+import dev.architectury.event.events.common.TickEvent;
 import net.minecraft.world.gen.structure.StructureType;
 
 public class ServerBus
 {
+	private static final Logger LOGGER = Hrrmowners.LOGGER;
+	
 	public static void registerEventHandlers()
 	{
+		LOGGER.info(" # Registered server event handlers");
 		PlayerEvent.PLAYER_JOIN.register(player -> 
 		{
 			Hrrmowners.PLAYERS.add(player);
 			
-			List<VillageComponent> comps = Lists.newArrayList();
+			List<DebugCuboid> comps = Lists.newArrayList();
 			player.getServerWorld().getStructureAccessor()
 				.getStructureStarts(player.getChunkPos(), s -> s.getType() == StructureType.JIGSAW)
 					.forEach(start -> start.getChildren()
-						.forEach(piece -> comps.add(VillageComponent.fromStructurePiece(piece))));
+						.forEach(piece -> comps.add(DebugCuboid.fromStructurePiece(piece))));
 			comps.removeIf(a -> a == null);
 			
-			System.out.println("Found "+comps.size()+" structure pieces");
-			Map<Type, Integer> tallies = new HashMap<>();
+			LOGGER.info("Found "+comps.size()+" structure pieces near "+player.getChunkPos().toString());
+			Map<PartType, Integer> tallies = new HashMap<>();
 			comps.forEach(comp -> tallies.put(comp.type(), tallies.getOrDefault(comp.type(), 0) + 1));
-			tallies.entrySet().forEach(entry -> System.out.println(" # "+entry.getKey().name()+" - "+entry.getValue()));
+			tallies.entrySet().forEach(entry -> LOGGER.info(" # "+entry.getKey().name()+" - "+entry.getValue()));
 			ShowCubesPacket.send(player, comps);
 		});
 		PlayerEvent.PLAYER_QUIT.register(player -> Hrrmowners.PLAYERS.remove(player));
+		
+		TickEvent.SERVER_LEVEL_POST.register((world) -> 
+		{
+			if(world.getTime()%Reference.Values.TICKS_PER_MINUTE == 0)
+				Hrrmowners.MANAGER.tickVillages(world.getRegistryKey(), world);
+		});
 	}
 }

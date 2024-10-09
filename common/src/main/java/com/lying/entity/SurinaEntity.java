@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.lying.Hrrmowners;
 import com.lying.entity.ai.SurinaTaskListProvider;
+import com.lying.init.HOItems;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Dynamic;
 
@@ -31,9 +32,13 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.passive.PassiveEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtOps;
@@ -46,6 +51,9 @@ import net.minecraft.server.network.DebugInfoSender;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.stat.Stats;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.village.TradeOffer;
@@ -174,6 +182,63 @@ public class SurinaEntity extends MerchantEntity implements VillagerDataContaine
 		if(natural)
 			natural = false;
 		super.mobTick();
+	}
+	
+	public ActionResult interactMob(PlayerEntity player, Hand hand)
+	{
+		ItemStack stack = player.getStackInHand(hand);
+		if(stack.isOf(HOItems.SURINA_SPAWN_EGG.get()) || !isAlive() || hasCustomer() || isSleeping() || player.shouldCancelInteraction())
+			return super.interactMob(player, hand);
+		
+		boolean isClient = getWorld().isClient();
+		if(isBaby())
+		{
+			sayNo();
+			return ActionResult.success(isClient);
+		}
+		if(!isClient)
+		{
+			boolean noOffers = getOffers().isEmpty();
+			if(hand == Hand.MAIN_HAND)
+			{
+				if(noOffers)
+					sayNo();
+				player.incrementStat(Stats.TALKED_TO_VILLAGER);
+			}
+			if(noOffers)
+				return ActionResult.CONSUME;
+			beginTradeWith(player);
+		}
+		return ActionResult.success(isClient);
+	}
+	
+	private void sayNo()
+	{
+		setHeadRollingTimeLeft(40);
+		if(!getWorld().isClient())
+			playSound(SoundEvents.ENTITY_VILLAGER_NO);
+	}
+	
+	private void beginTradeWith(PlayerEntity customer)
+	{
+		prepareOffersFor(customer);
+		setCustomer(customer);
+		sendOffers(customer, getDisplayName(), getVillagerData().getLevel());
+	}
+	
+	private void prepareOffersFor(PlayerEntity player)
+	{
+		if(player.hasStatusEffect(StatusEffects.HERO_OF_THE_VILLAGE))
+		{
+			StatusEffectInstance inst = player.getStatusEffect(StatusEffects.HERO_OF_THE_VILLAGE);
+			double amp = inst.getAmplifier();
+			for(TradeOffer offer : getOffers())
+			{
+				double d = 0.3 + 0.0625 * amp;
+				int j = (int)Math.floor(d * (double)offer.getOriginalFirstBuyItem().getCount());
+				offer.increaseSpecialPrice(-Math.max(j, 1));
+			}
+		}
 	}
 	
 	protected void afterUsing(TradeOffer tradeOffer)

@@ -2,7 +2,7 @@ package com.lying.client.renderer.entity;
 
 import com.lying.client.init.HOModelLayerParts;
 import com.lying.client.model.SurinaEntityModel;
-import com.lying.client.renderer.SurinaCloakFeatureRenderer;
+import com.lying.client.renderer.feature.SurinaCloakFeatureRenderer;
 import com.lying.entity.SurinaEntity;
 import com.lying.reference.Reference;
 

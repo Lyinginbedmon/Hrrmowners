@@ -22,15 +22,15 @@ public class ClientBus
 	
 	public static void registerEventHandlers()
 	{
-		Hrrmowners.LOGGER.info(" # Registered client event handlers #");
+		Hrrmowners.LOGGER.info(" # Registered client event handlers");
 		ClientTickEvent.CLIENT_POST.register(mc -> 
 		{
 			HrrmownersClient.VILLAGE_RENDERER.tick();
 		});
 		
-		RenderEvents.AFTER_WORLD_RENDER_EVENT.register((RenderTickCounter tickCounter, Camera camera, GameRenderer renderer, LightmapTextureManager lightmapTextureManager, Matrix4f matrix4f1, Matrix4f matrix4f2, VertexConsumerProvider vertexConsumerProvider) -> 
+		RenderEvents.BEFORE_WORLD_RENDER_EVENT.register((RenderTickCounter tickCounter, Camera camera, GameRenderer renderer, LightmapTextureManager lightmapTextureManager, Matrix4f matrix4f1, Matrix4f matrix4f2, VertexConsumerProvider vertexConsumerProvider) -> 
 		{
-			HrrmownersClient.VILLAGE_RENDERER.render(vertexConsumerProvider.getBuffer(RenderLayer.LINES));
+			HrrmownersClient.VILLAGE_RENDERER.render(vertexConsumerProvider.getBuffer(RenderLayer.LINES), camera.getPos(), vertexConsumerProvider);
 		});
 		
 		PlayerEvent.CHANGE_DIMENSION.register((player, w1, w2) -> 

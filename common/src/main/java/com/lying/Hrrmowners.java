@@ -7,7 +7,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
+import com.lying.entity.village.VillageManager;
+import com.lying.init.HOCommands;
 import com.lying.init.HOEntityTypes;
+import com.lying.init.HOItems;
 import com.lying.reference.Reference;
 import com.lying.utility.ServerBus;
 
@@ -17,7 +20,10 @@ public final class Hrrmowners
 {
     public static final Logger LOGGER = LoggerFactory.getLogger(Reference.ModInfo.MOD_ID);
     
+    /** List of all server players, used in the absence of a world or server object */
     public static List<ServerPlayerEntity> PLAYERS = Lists.newArrayList();
+    
+    public static final VillageManager MANAGER = new VillageManager();
     
 	/*
 	 * Goal: A system that autonomously manages villages to fulfill the needs of its occupants
@@ -42,7 +48,9 @@ public final class Hrrmowners
     {
     	ServerBus.registerEventHandlers();
     	
+    	HOCommands.init();
     	HOEntityTypes.init();
+    	HOItems.init();
     }
     
     public static void forAllPlayers(Consumer<ServerPlayerEntity> consumer) { PLAYERS.forEach(player -> consumer.accept(player)); }

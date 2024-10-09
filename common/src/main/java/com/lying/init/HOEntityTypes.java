@@ -3,6 +3,7 @@ package com.lying.init;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
+import com.lying.Hrrmowners;
 import com.lying.entity.SurinaEntity;
 import com.lying.reference.Reference;
 
@@ -33,6 +34,7 @@ public class HOEntityTypes
 	public static void init()
 	{
 		ENTITY_TYPES.register();
+		Hrrmowners.LOGGER.info(" # Registered entity types");
 	}
 	
 	public static void registerAttributeContainers(BiConsumer<EntityType<? extends LivingEntity>, DefaultAttributeContainer.Builder> funcIn)

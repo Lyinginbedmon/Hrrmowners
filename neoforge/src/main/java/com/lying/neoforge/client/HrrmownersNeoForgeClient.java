@@ -26,6 +26,7 @@ public class HrrmownersNeoForgeClient
 		event.registerEntityRenderer(HOEntityTypes.SURINA.get(), SurinaEntityRenderer::new);
 	}
 	
+	@SubscribeEvent
 	public static void registerModelParts(EntityRenderersEvent.RegisterLayerDefinitions event)
 	{
 		HOModelLayerParts.init((layer, func) -> event.registerLayerDefinition(layer, func));

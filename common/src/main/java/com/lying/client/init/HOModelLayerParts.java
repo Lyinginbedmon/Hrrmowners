@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
+import com.lying.Hrrmowners;
 import com.lying.client.model.SurinaEntityModel;
 import com.lying.reference.Reference;
 
@@ -30,5 +31,6 @@ public class HOModelLayerParts
 	public static void init(BiConsumer<EntityModelLayer, Supplier<TexturedModelData>> consumer)
 	{
 		LAYERS.entrySet().forEach(entry -> consumer.accept(entry.getKey(), entry.getValue()));
+		Hrrmowners.LOGGER.info(" # Registered model layer parts");
 	}
 }
