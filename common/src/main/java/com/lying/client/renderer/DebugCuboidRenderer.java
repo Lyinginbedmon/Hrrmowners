@@ -50,8 +50,8 @@ public class DebugCuboidRenderer
 	
 	private static void renderComponent(DebugCuboid comp, VertexConsumer consumer, Vec3d cameraPos, VertexConsumerProvider vertexConsumerProvider)
 	{
-		if(!comp.core().isWithinDistance(cameraPos, 32))
-			return;
+//		if(!comp.core().isWithinDistance(cameraPos, 32))
+//			return;
 		
 		BlockPos min = comp.min();
 		BlockPos max = comp.max();
