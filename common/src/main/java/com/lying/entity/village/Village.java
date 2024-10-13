@@ -4,10 +4,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+
 import com.google.common.collect.Lists;
 import com.lying.Hrrmowners;
 import com.lying.entity.SurinaEntity;
 
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
@@ -15,6 +19,7 @@ import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.structure.PoolStructurePiece;
+import net.minecraft.structure.StructureContext;
 import net.minecraft.structure.StructureLiquidSettings;
 import net.minecraft.structure.StructureTemplate.StructureBlockInfo;
 import net.minecraft.structure.StructureTemplateManager;
@@ -23,16 +28,23 @@ import net.minecraft.structure.pool.StructurePoolElement;
 import net.minecraft.structure.pool.StructurePoolElementType;
 import net.minecraft.structure.pool.alias.StructurePoolAliasLookup;
 import net.minecraft.util.BlockRotation;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.BiomeKeys;
 
 public class Village
 {
+	private static final Logger LOGGER = Hrrmowners.LOGGER;
+	
 	private final UUID id;
 	private final RegistryKey<World> dimension;
-	private final RegistryEntry<Biome> biome;
+	private final RegistryKey<Biome> biome;
+	
+	/** A set of VillagePart reflecting the layout of the village */
+	private final VillageModel model = new VillageModel();
 	
 	/** True if this village exists in the world yet */
 	private boolean inWorld = false;
@@ -40,10 +52,7 @@ public class Village
 	/** Cached array of residents within the boundaries of the village */
 	private final List<SurinaEntity> residents = Lists.newArrayList();
 	
-	/** A set of VillagePart reflecting the layout of the village */
-	private final VillageModel model = new VillageModel();
-	
-	public Village(UUID idIn, RegistryKey<World> dimIn, RegistryEntry<Biome> biomeIn)
+	public Village(UUID idIn, RegistryKey<World> dimIn, RegistryKey<Biome> biomeIn)
 	{
 		id = idIn;
 		dimension = dimIn;
@@ -67,6 +76,25 @@ public class Village
 	public void tick(ServerWorld world)
 	{
 		// Periodically evaluate goals and update plan if necessary
+	}
+	
+	public NbtCompound writeToNbt(NbtCompound nbt, StructureContext context)
+	{
+		nbt.putUuid("ID", id);
+		Identifier.CODEC.encodeStart(NbtOps.INSTANCE, dimension.getValue()).resultOrPartial(LOGGER::error).ifPresent(e -> nbt.put("Dim", e));
+		Identifier.CODEC.encodeStart(NbtOps.INSTANCE, biome.getValue()).resultOrPartial(LOGGER::error).ifPresent(e -> nbt.put("Biome", e));
+		nbt.put("Model", model.writeToNbt(new NbtCompound(), context));
+		return nbt;
+	}
+	
+	public static Village readFromNbt(NbtCompound nbt, StructureContext context)
+	{
+		RegistryKey<World> dimension = World.CODEC.parse(NbtOps.INSTANCE, nbt.get("Dim")).resultOrPartial(LOGGER::error).orElse(World.OVERWORLD);
+		Optional<RegistryEntry<Biome>> biomeOpt = Biome.REGISTRY_CODEC.parse(NbtOps.INSTANCE, nbt.get("Biome")).resultOrPartial(LOGGER::error);
+		RegistryKey<Biome> biome = biomeOpt.isPresent() ? biomeOpt.get().getKey().get() : BiomeKeys.DESERT;
+		Village village = new Village(nbt.getUuid("ID"), dimension, biome);
+		village.model.readFromNbt(nbt.getCompound("Model"), context);
+		return village;
 	}
 	
 	public void erase(ServerWorld world)
@@ -117,7 +145,6 @@ public class Village
 				Optional<BlockPos> connectOffset = part.getOffsetToLinkTo(connector);
 				if(connectOffset.isPresent())
 				{
-					// FIXME Ensure new part is properly translated into its correct place before generation
 					part.translate(connectOffset.get(), world.getStructureTemplateManager());
 					
 					// Ensure part won't intersect with another part in this position
@@ -196,5 +223,12 @@ public class Village
 				StructureLiquidSettings.APPLY_WATERLOGGING);
 		
 		return Optional.of(new VillagePart(UUID.randomUUID(), type, poolStructurePiece, manager));
+	}
+	
+	public static enum Resident
+	{
+		WORKER,
+		NEET,
+		CHILD;
 	}
 }
