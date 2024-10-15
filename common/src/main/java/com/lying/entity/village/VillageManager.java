@@ -18,7 +18,6 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.structure.StructureContext;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
@@ -33,7 +32,7 @@ public class VillageManager
 	
 	public VillageManager() { }
 	
-	public NbtCompound writeToNbt(NbtCompound nbt, StructureContext context)
+	public NbtCompound writeToNbt(NbtCompound nbt, ServerWorld world)
 	{
 		if(villageMap.isEmpty())
 			return nbt;
@@ -46,7 +45,7 @@ public class VillageManager
 			NbtCompound data = new NbtCompound();
 			Identifier.CODEC.encodeStart(NbtOps.INSTANCE, entry.getKey().getValue()).resultOrPartial(LOGGER::error).ifPresent(e -> nbt.put("Dim", e));
 			NbtList list = new NbtList();
-			entry.getValue().forEach(v -> list.add(v.writeToNbt(new NbtCompound(), context)));
+			entry.getValue().forEach(v -> list.add(v.writeToNbt(new NbtCompound(), world)));
 			data.put("Villages", list);
 			set.add(data);
 		}
@@ -54,7 +53,7 @@ public class VillageManager
 		return nbt;
 	}
 	
-	public void readFromNbt(NbtCompound nbt, StructureContext context)
+	public void readFromNbt(NbtCompound nbt, ServerWorld world)
 	{
 		villageMap.clear();
 		
@@ -67,7 +66,7 @@ public class VillageManager
 			List<Village> list = Lists.newArrayList();
 			NbtList entries = data.getList("Villages", NbtElement.COMPOUND_TYPE);
 			for(int j=0; j<entries.size(); j++)
-				list.add(Village.readFromNbt(entries.getCompound(j), context));
+				list.add(Village.readFromNbt(entries.getCompound(j), world));
 			
 			villageMap.put(dimension, list);
 		}

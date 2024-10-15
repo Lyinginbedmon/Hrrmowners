@@ -9,13 +9,13 @@ import org.slf4j.Logger;
 
 import com.google.common.collect.Lists;
 import com.lying.Hrrmowners;
+import com.lying.entity.village.ai.Connector;
 import com.lying.network.HideCubesPacket;
 import com.lying.network.ShowCubesPacket;
 import com.lying.utility.DebugCuboid;
 
 import net.minecraft.block.Blocks;
 import net.minecraft.block.JigsawBlock;
-import net.minecraft.block.entity.JigsawBlockEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtOps;
@@ -33,7 +33,6 @@ import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 
@@ -49,7 +48,7 @@ public class VillagePart
 	public BlockBox bounds;
 	
 	/** Open connections remaining for this part */
-	private final List<StructureBlockInfo> connectors = Lists.newArrayList();
+	private final List<Connector> connectors = Lists.newArrayList();
 	
 	private final PoolStructurePiece piece;
 	
@@ -77,15 +76,15 @@ public class VillagePart
 		return nbt;
 	}
 	
-	public static Optional<VillagePart> readFromNbt(NbtCompound nbt, StructureTemplateManager templateManager, StructureContext context)
+	public static Optional<VillagePart> readFromNbt(NbtCompound nbt, ServerWorld world)
 	{
 		UUID id = nbt.getUuid("ID");
 		PartType type = PartType.CODEC.parse(NbtOps.INSTANCE, nbt.get("PartType")).getOrThrow();
-		PoolStructurePiece piece = (PoolStructurePiece)pieceFromNbt(nbt.getCompound("Piece"), context);
+		PoolStructurePiece piece = (PoolStructurePiece)pieceFromNbt(nbt.getCompound("Piece"), StructureContext.from(world));
 		if(piece == null)
 			return Optional.empty();
 		
-		VillagePart part = new VillagePart(id, type, piece, templateManager);
+		VillagePart part = new VillagePart(id, type, piece, world.getStructureTemplateManager());
 		part.connectors.clear();
 		if(nbt.contains("Connectors", NbtElement.LIST_TYPE))
 			part.connectors.addAll(VillageModel.nbtToConnectors(nbt.getList("Connectors", NbtElement.COMPOUND_TYPE)));
@@ -118,7 +117,7 @@ public class VillagePart
 		StructurePoolElement element = piece.getPoolElement();
 		element.getStructureBlockInfos(templateManager, piece.getPos(), piece.getRotation(), random()).stream()
 			.filter(info -> isConnector(info, bounds))
-			.forEach(info -> connectors.add(info));
+			.forEach(info -> connectors.add(new Connector(info)));
 	}
 	
 	public static boolean isConnector(StructureBlockInfo info, BlockBox bounds)
@@ -133,37 +132,36 @@ public class VillagePart
 		calculateConnectors(templateManager);
 	}
 	
-	public Optional<BlockPos> getOffsetToLinkTo(StructureBlockInfo connector)
+	public Optional<BlockPos> getOffsetToLinkTo(Connector connector)
 	{
-		Direction face = JigsawBlock.getFacing(connector.state()).getOpposite();
-		for(StructureBlockInfo info : connectors)
+		for(Connector info : connectors)
 		{
-			if(JigsawBlock.getFacing(info.state()) != face) continue;
-			BlockPos join = info.pos().offset(face);
-			return Optional.of(connector.pos().subtract(join));
+			if(!info.linksTo(connector)) continue;
+			return Optional.of(connector.pos.subtract(info.linkPos()));
 		}
 		return Optional.empty();
 	}
 	
-	public void lockConnectorAt(BlockPos position)
+	public void lockConnectorAt(BlockPos position, boolean shouldNotify)
 	{
 		connectors.removeIf(info -> 
 		{
-			BlockPos pos = info.pos();
+			BlockPos pos = info.pos;
 			boolean bl = pos.getSquaredDistance(position) == 0D;
-			if(bl)
-				Hrrmowners.forAllPlayers(player -> HideCubesPacket.send(player, new DebugCuboid(pos, pos, PartType.WORK, info.nbt().getString(JigsawBlockEntity.NAME_KEY))));
+			if(bl && shouldNotify)
+				Hrrmowners.forAllPlayers(player -> HideCubesPacket.send(player, new DebugCuboid(pos, pos, PartType.WORK, info.name)));
 			return bl;
 		});
 	}
 	
 	public boolean hasOpenConnections() { return !connectors.isEmpty(); }
 	
-	public List<StructureBlockInfo> openConnections() { return connectors; }
+	public List<Connector> openConnections() { return connectors; }
 	
 	public void placeInWorld(ServerWorld world)
 	{
 		piece.generate(world, world.getStructureAccessor(), world.getChunkManager().getChunkGenerator(), random(), bounds, pivot(), false);
+		
 	}
 	
 	public Random random() { return Random.create(pivot().getX() * pivot().getZ() * pivot().getY()); }
@@ -192,6 +190,6 @@ public class VillagePart
 	public void collectDebugCuboids(List<DebugCuboid> collection)
 	{
 		collection.add(new DebugCuboid(min(), max(), type, ""));
-		connectors.forEach(info -> collection.add(new DebugCuboid(info.pos(), info.pos(), PartType.WORK, info.nbt().getString(JigsawBlockEntity.NAME_KEY))));
+		connectors.forEach(info -> collection.add(new DebugCuboid(info.pos, info.pos, PartType.WORK, info.name)));
 	}
 }

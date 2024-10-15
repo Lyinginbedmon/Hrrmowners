@@ -44,7 +44,7 @@ public class ServerBus
 		
 		TickEvent.SERVER_LEVEL_POST.register((world) -> 
 		{
-			if(world.getTime()%Reference.Values.TICKS_PER_MINUTE == 0)
+			if(world.getTime()%Reference.Values.VILLAGE_TICK_RATE == 0)
 				Hrrmowners.MANAGER.tickVillages(world.getRegistryKey(), world);
 		});
 	}

@@ -3,12 +3,16 @@ package com.lying.entity.village;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Predicate;
 
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import com.google.common.collect.Lists;
 import com.lying.Hrrmowners;
 import com.lying.entity.SurinaEntity;
+import com.lying.entity.village.ai.Connector;
+import com.lying.entity.village.ai.HOA;
 
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtOps;
@@ -19,9 +23,7 @@ import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.structure.PoolStructurePiece;
-import net.minecraft.structure.StructureContext;
 import net.minecraft.structure.StructureLiquidSettings;
-import net.minecraft.structure.StructureTemplate.StructureBlockInfo;
 import net.minecraft.structure.StructureTemplateManager;
 import net.minecraft.structure.pool.StructurePool;
 import net.minecraft.structure.pool.StructurePoolElement;
@@ -31,6 +33,7 @@ import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.random.Random;
+import net.minecraft.village.VillagerProfession;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeKeys;
@@ -45,6 +48,8 @@ public class Village
 	
 	/** A set of VillagePart reflecting the layout of the village */
 	private final VillageModel model = new VillageModel();
+	
+	private final HOA hoa = new HOA();
 	
 	/** True if this village exists in the world yet */
 	private boolean inWorld = false;
@@ -73,34 +78,51 @@ public class Village
 		return world.isChunkLoaded(core.min()) && world.isChunkLoaded(core.max());
 	}
 	
+	public VillageModel model() { return this.model; }
+	
+	public void tryPlan(ServerWorld world)
+	{
+		hoa.tryGeneratePlan(model, this, world);
+		
+	}
+	
 	public void tick(ServerWorld world)
 	{
 		// Periodically evaluate goals and update plan if necessary
+		if(hoa.hasPlan())
+			hoa.tickPlan(world, this);
 	}
 	
-	public NbtCompound writeToNbt(NbtCompound nbt, StructureContext context)
+	public NbtCompound writeToNbt(NbtCompound nbt, ServerWorld world)
 	{
 		nbt.putUuid("ID", id);
 		Identifier.CODEC.encodeStart(NbtOps.INSTANCE, dimension.getValue()).resultOrPartial(LOGGER::error).ifPresent(e -> nbt.put("Dim", e));
 		Identifier.CODEC.encodeStart(NbtOps.INSTANCE, biome.getValue()).resultOrPartial(LOGGER::error).ifPresent(e -> nbt.put("Biome", e));
-		nbt.put("Model", model.writeToNbt(new NbtCompound(), context));
+		nbt.put("Model", model.writeToNbt(new NbtCompound(), world));
 		return nbt;
 	}
 	
-	public static Village readFromNbt(NbtCompound nbt, StructureContext context)
+	public static Village readFromNbt(NbtCompound nbt, ServerWorld world)
 	{
 		RegistryKey<World> dimension = World.CODEC.parse(NbtOps.INSTANCE, nbt.get("Dim")).resultOrPartial(LOGGER::error).orElse(World.OVERWORLD);
 		Optional<RegistryEntry<Biome>> biomeOpt = Biome.REGISTRY_CODEC.parse(NbtOps.INSTANCE, nbt.get("Biome")).resultOrPartial(LOGGER::error);
 		RegistryKey<Biome> biome = biomeOpt.isPresent() ? biomeOpt.get().getKey().get() : BiomeKeys.DESERT;
 		Village village = new Village(nbt.getUuid("ID"), dimension, biome);
-		village.model.readFromNbt(nbt.getCompound("Model"), context);
+		village.model.readFromNbt(nbt.getCompound("Model"), world);
 		return village;
+	}
+	
+	public int getPopulation(@Nullable Resident type)
+	{
+		return type == null ? residents.size() : (int)residents.stream().filter(type::test).count();
 	}
 	
 	public void erase(ServerWorld world)
 	{
 		model.eraseAll(world, dimension);
 	}
+	
+	public RegistryKey<Biome> biome() { return this.biome; }
 	
 	/** Adds a random new part to the village */
 	public boolean grow(ServerWorld world)
@@ -140,7 +162,7 @@ public class Village
 			}
 			
 			VillagePart part = partOpt.get();
-			for(StructureBlockInfo connector : model.connectors())
+			for(Connector connector : model.connectors())
 			{
 				Optional<BlockPos> connectOffset = part.getOffsetToLinkTo(connector);
 				if(connectOffset.isPresent())
@@ -162,7 +184,7 @@ public class Village
 	
 	public boolean addPart(VillagePart part, ServerWorld world, boolean generate)
 	{
-		boolean result = model.addPart(part, world);
+		boolean result = model.addPart(part, world, inWorld);
 		if(inWorld)
 		{
 			part.notifyObservers(world.getRegistryKey());
@@ -227,8 +249,20 @@ public class Village
 	
 	public static enum Resident
 	{
-		WORKER,
-		NEET,
-		CHILD;
+		/** Adults capable of having a profession */
+		WORKER(s -> !s.isBaby() && s.getVillagerData().getProfession() != VillagerProfession.NITWIT),
+		/** Adult nitwits */
+		NEET(s -> !s.isBaby() && s.getVillagerData().getProfession() == VillagerProfession.NITWIT),
+		/** Children */
+		CHILD(s -> s.isBaby());
+		
+		private final Predicate<SurinaEntity> check;
+		
+		private Resident(Predicate<SurinaEntity> checkIn)
+		{
+			check = checkIn;
+		}
+		
+		public boolean test(SurinaEntity ent) { return check.test(ent); }
 	}
 }

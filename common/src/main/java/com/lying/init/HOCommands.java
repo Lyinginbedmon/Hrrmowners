@@ -59,6 +59,24 @@ public class HOCommands
 						});
 						return 15;
 					}))
+				.then(literal("plan").executes(context -> 
+				{
+					ServerCommandSource source = context.getSource();
+					Vec3d pos = source.getPosition();
+					BlockPos blockPos = BlockPos.ofFloored(pos.getX(), pos.getY(), pos.getZ());
+					ServerWorld world = source.getWorld();
+					RegistryKey<World> dimension = world.getRegistryKey();
+					
+					Optional<Village> village = Hrrmowners.MANAGER.getVillage(dimension, blockPos);
+					village.ifPresentOrElse(v -> 
+					{
+						v.tryPlan(world);
+					}, () -> 
+					{
+						source.sendFeedback(() -> Text.literal("No village to grow"), false);
+					});
+					return 15;
+				}))
 				.then(literal("kill").executes(context -> 
 					{
 						ServerCommandSource source = context.getSource();

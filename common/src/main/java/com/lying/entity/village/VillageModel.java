@@ -1,26 +1,25 @@
 package com.lying.entity.village;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.UUID;
 
 import com.google.common.collect.Lists;
 import com.lying.Hrrmowners;
+import com.lying.entity.village.ai.Connector;
 import com.lying.network.HideCubesPacket;
 import com.lying.utility.DebugCuboid;
 
-import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.JigsawBlock;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtHelper;
 import net.minecraft.nbt.NbtList;
-import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.structure.StructureContext;
-import net.minecraft.structure.StructureTemplate.StructureBlockInfo;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -30,36 +29,69 @@ public class VillageModel
 	private final List<VillagePart> parts = Lists.newArrayList();
 	
 	/** A cached list of all unoccupied connection points, as defined by jigsaw blocks*/
-	private final List<StructureBlockInfo> connectors = Lists.newArrayList();
+	private final List<Connector> connectors = Lists.newArrayList();
 	
-	public VillageModel copy(NbtCompound nbt, StructureContext context)
+	/** Tally of different types of part within this model */
+	private final Map<PartType, Integer> tally = new HashMap<>();
+	
+	public boolean isEquivalent(VillageModel model)
+	{
+		if(connectors.size() == model.connectors.size())
+		{
+			for(Connector connector : connectors)
+				if(model.connectors.stream().noneMatch(c -> c.equals(connector)))
+					return false;
+		}
+		else
+			return false;
+		
+		if(tally.size() == model.tally.size())
+		{
+			for(Entry<PartType, Integer> entry : tally.entrySet())
+				if(!model.tally.containsKey(entry.getKey()) || model.tally.get(entry.getKey()) != entry.getValue())
+					return false;
+		}
+		else
+			return false;
+		
+		return true;
+	}
+	
+	public VillageModel copy(ServerWorld world)
 	{
 		VillageModel model = new VillageModel();
-		model.readFromNbt(writeToNbt(new NbtCompound(), context), context);
+		model.readFromNbt(writeToNbt(new NbtCompound(), world), world);
 		return model;
 	}
 	
-	public NbtCompound writeToNbt(NbtCompound nbt, StructureContext context)
+	public NbtCompound writeToNbt(NbtCompound nbt, ServerWorld world)
 	{
-		if(!parts.isEmpty())
+		// Since we can't have any connectors or tallies without any parts, just return a blank compound
+		if(parts.isEmpty())
+			return nbt;
+		else
 		{
 			NbtList components = new NbtList();
-			parts.forEach(p -> components.add(p.writeToNbt(new NbtCompound(), context)));
+			parts.forEach(p -> components.add(p.writeToNbt(new NbtCompound(), StructureContext.from(world))));
 			nbt.put("Parts", components);
 		}
+		
 		if(!connectors.isEmpty())
 			nbt.put("Connectors", connectorsToNbt(connectors));
 		return nbt;
 	}
 	
-	public VillageModel readFromNbt(NbtCompound nbt, StructureContext context)
+	public VillageModel readFromNbt(NbtCompound nbt, ServerWorld world)
 	{
 		parts.clear();
 		if(nbt.contains("Parts", NbtElement.LIST_TYPE))
 		{
 			NbtList components = nbt.getList("Parts", NbtElement.COMPOUND_TYPE);
 			for(int i=0; i<components.size(); i++)
-				VillagePart.readFromNbt(components.getCompound(i), context.structureTemplateManager(), context).ifPresent(p -> parts.add(p));
+				VillagePart.readFromNbt(components.getCompound(i), world).ifPresent(p -> {
+					parts.add(p);
+					tally.put(p.type, tally.getOrDefault(p.type, 0) + 1);
+				});
 		}
 		
 		connectors.clear();
@@ -71,7 +103,9 @@ public class VillageModel
 	
 	public List<VillagePart> parts() { return parts; }
 	
-	public List<StructureBlockInfo> connectors() { return connectors; }
+	public List<Connector> connectors() { return connectors; }
+	
+	public int getCount(PartType type) { return tally.getOrDefault(type, 0); }
 	
 	public boolean isEmpty() { return parts.isEmpty(); }
 	
@@ -90,32 +124,36 @@ public class VillageModel
 		return parts.stream().filter(part -> part.id.equals(id)).findFirst();
 	}
 	
-	public boolean addPart(VillagePart part, ServerWorld world)
+	public boolean addPart(VillagePart part, ServerWorld world, boolean shouldNotify)
 	{
 		if(parts.stream().anyMatch(part2 -> part2.id.equals(part.id) || part2.bounds.intersects(part.bounds)))
 			return false;
 		
 		parts.add(part);
-		recacheConnectors();
+		tally.put(part.type, tally.getOrDefault(part.type, 0) + 1);
+		
+		recacheConnectors(shouldNotify);
+		if(shouldNotify)
+			notifyObservers(world.getRegistryKey());
 		return true;
 	}
 	
 	/** Updates all parts to remove connectors locked by other parts */
-	public void recacheConnectors()
+	public void recacheConnectors(boolean shouldNotify)
 	{
 		connectors.clear();
 		for(VillagePart part : parts)
 		{
-			List<StructureBlockInfo> remove = Lists.newArrayList();
-			for(StructureBlockInfo connector : part.openConnections())
+			List<Connector> remove = Lists.newArrayList();
+			for(Connector connector : part.openConnections())
 			{
-				List<VillagePart> containers = getContainers(connector.pos().offset(JigsawBlock.getFacing(connector.state())));
+				List<VillagePart> containers = getContainers(connector.linkPos());
 				if(containers.stream().anyMatch(c -> !c.id.equals(part.id)))
 					remove.add(connector);
 				else
 					connectors.add(connector);
 			}
-			remove.forEach(info -> part.lockConnectorAt(info.pos()));
+			remove.forEach(info -> part.lockConnectorAt(info.pos, shouldNotify));
 		}
 	}
 	
@@ -141,7 +179,7 @@ public class VillageModel
 		parts.forEach(part -> erasePart(part, world, dimension));
 	}
 	
-	public List<StructureBlockInfo> getAvailableConnections()
+	public List<Connector> getAvailableConnections()
 	{
 		return parts.stream().flatMap(part -> part.openConnections().stream()).toList();
 	}
@@ -151,35 +189,21 @@ public class VillageModel
 		parts.forEach(part -> part.notifyObservers(dimension));
 	}
 	
-	public static NbtList connectorsToNbt(List<StructureBlockInfo> connectors)
+	public static NbtList connectorsToNbt(List<Connector> connectors)
 	{
 		NbtList set = new NbtList();
-		connectors.forEach(p -> 
-		{
-			NbtCompound data = new NbtCompound();
-			data.put("Pos", NbtHelper.fromBlockPos(p.pos()));
-			data.put("State", NbtHelper.fromBlockState(p.state()));
-			if(!p.nbt().isEmpty())
-				data.put("NBT", p.nbt());
-			set.add(data);
-		});
+		connectors.forEach(p -> set.add(p.toNbt()));
 		return set;
 	}
 	
-	public static List<StructureBlockInfo> nbtToConnectors(NbtList set)
+	public static List<Connector> nbtToConnectors(NbtList set)
 	{
-		List<StructureBlockInfo> connectors = Lists.newArrayList();
+		List<Connector> connectors = Lists.newArrayList();
 		for(int i=0; i<set.size(); i++)
 		{
-			NbtCompound data = set.getCompound(i);
-			Optional<BlockPos> pos = NbtHelper.toBlockPos(data, "Pos");
-			if(pos.isEmpty())
-				continue;
-			BlockState state = NbtHelper.toBlockState(Registries.BLOCK.getReadOnlyWrapper(), data.getCompound("State"));
-			if(state.isAir())
-				continue;
-			NbtCompound stateData = data.contains("NBT", NbtElement.COMPOUND_TYPE) ? data.getCompound("NBT") : null;
-			connectors.add(new StructureBlockInfo(pos.get(), state, stateData));
+			Connector connector = Connector.fromNbt(set.getCompound(i));
+			if(connector != null)
+				connectors.add(connector);
 		}
 		return connectors;
 	}
