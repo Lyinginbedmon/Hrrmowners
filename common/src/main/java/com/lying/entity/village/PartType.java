@@ -5,6 +5,8 @@ import java.util.function.Function;
 
 import org.jetbrains.annotations.Nullable;
 
+import com.lying.data.SurinaVillageData;
+
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.structure.pool.StructurePool;
 import net.minecraft.structure.pool.StructurePools;
@@ -16,8 +18,8 @@ public enum PartType implements StringIdentifiable
 	CENTER(0x0000FF, 5F, biome -> StructurePools.ofVanilla("village/desert/town_centers")),
 	HOUSE(0x00FF00, 2F, biome -> StructurePools.ofVanilla("village/desert/houses")),
 	WORK(0xFF0000, 2F, biome -> StructurePools.ofVanilla("village/desert/houses")),
-	STREET(0xFFFFFF, 1F, biome -> StructurePools.ofVanilla("village/desert/streets")),
-	CORNER(0xFFFFFF, 1F, biome -> StructurePools.ofVanilla("village/desert/streets"));
+	STREET(0xFFFFFF, 1F, biome -> SurinaVillageData.DESERT_STREET_KEY),
+	CORNER(0xFFFFFF, 1F, biome -> SurinaVillageData.DESERT_CORNER_KEY);
 	
 	@SuppressWarnings("deprecation")
 	public static final StringIdentifiable.EnumCodec<PartType> CODEC = StringIdentifiable.createCodec(PartType::values);

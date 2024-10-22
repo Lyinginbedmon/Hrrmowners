@@ -135,12 +135,7 @@ public class VillagePart
 	
 	public Optional<BlockPos> getOffsetToLinkTo(Connector connector)
 	{
-		for(Connector info : connectors)
-		{
-			if(!info.linksTo(connector)) continue;
-			return Optional.of(connector.pos.subtract(info.linkPos()));
-		}
-		return Optional.empty();
+		return connectors.stream().filter(c -> c.linksTo(connector)).map(c -> connector.pos.subtract(c.linkPos())).findAny();
 	}
 	
 	public void lockConnectorAt(BlockPos position, boolean shouldNotify)

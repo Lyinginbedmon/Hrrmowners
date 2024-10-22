@@ -30,7 +30,8 @@ public class ClientBus
 		
 		RenderEvents.BEFORE_WORLD_RENDER_EVENT.register((RenderTickCounter tickCounter, Camera camera, GameRenderer renderer, LightmapTextureManager lightmapTextureManager, Matrix4f matrix4f1, Matrix4f matrix4f2, VertexConsumerProvider vertexConsumerProvider) -> 
 		{
-			HrrmownersClient.VILLAGE_RENDERER.render(vertexConsumerProvider.getBuffer(RenderLayer.LINES), camera.getPos(), vertexConsumerProvider);
+			if(!mc.options.hudHidden)
+				HrrmownersClient.VILLAGE_RENDERER.render(vertexConsumerProvider.getBuffer(RenderLayer.LINES), camera.getPos(), vertexConsumerProvider);
 		});
 		
 		PlayerEvent.CHANGE_DIMENSION.register((player, w1, w2) -> 

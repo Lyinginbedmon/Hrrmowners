@@ -72,6 +72,7 @@ public class Village
 		hoa = new HOA(List.of(), List.of(
 				new GoalHaveOpenConnectors(3), 
 				new GoalTypeMinimum(PartType.STREET, 1),
+//				new GoalTypeMinimum(PartType.CENTER, m -> m.residentsOfType(Resident.QUEEN)),
 				new GoalTypeMinimum(PartType.HOUSE, VillageModel::population),
 				new GoalTypeMinimum(PartType.WORK, m -> m.residentsOfType(Resident.WORKER))
 				)); 
@@ -111,11 +112,12 @@ public class Village
 		}
 		
 		// Update residential census
-		if(world.getTime()%Reference.Values.TICKS_PER_MINUTE == 0)
+		if(world.getTime()%(Reference.Values.VILLAGE_TICK_RATE * 2) == 0 && !model.isEmpty())
 		{
 			residents.clear();
 			residents.addAll(model.getEnclosedResidents(SurinaEntity.class, world, 3D));
-			LOGGER.info("# Updated village census: {}", residents.size());
+			if(!residents.isEmpty())
+				LOGGER.info("# Updated village census: {}", residents.size());
 		}
 	}
 	
@@ -249,18 +251,19 @@ public class Village
 		Optional<StructurePool> optPool = Optional.of(poolKey).flatMap(key -> registry.getOrEmpty(aliasLookup.lookup(key)));
 		if(optPool.isEmpty())
 		{
-			Hrrmowners.LOGGER.error("Structure pool is empty "+poolKey.getValue().toString());
+			Hrrmowners.LOGGER.error("Structure pool {} is empty", poolKey.getValue().toString());
 			return Optional.empty();
 		}
 		
-		StructureTemplateManager manager = server.getStructureTemplateManager();
-		StructurePoolElement element = optPool.get().getRandomElement(rand);
-		if(element.getType() == StructurePoolElementType.EMPTY_POOL_ELEMENT)
-		{
-			Hrrmowners.LOGGER.error("Structure pool element is empty");
-			return Optional.empty();
-		}
+		for(StructurePoolElement element : optPool.get().getElementIndicesInRandomOrder(rand).stream().filter(e -> e.getType() != StructurePoolElementType.EMPTY_POOL_ELEMENT).toList())
+			return makeNewPart(element, type, position, rotation, server.getStructureTemplateManager());
 		
+		Hrrmowners.LOGGER.error("No useable elements found in structure pool {}", poolKey.getValue().toString());
+		return Optional.empty();
+	}
+	
+	public static Optional<VillagePart> makeNewPart(StructurePoolElement element, PartType type, BlockPos position, BlockRotation rotation, StructureTemplateManager manager)
+	{
 		PoolStructurePiece poolStructurePiece = new PoolStructurePiece(
 				manager, 
 				element, 

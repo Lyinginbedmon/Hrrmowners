@@ -15,6 +15,9 @@
 	"icon": "assets/hrrmowners/icon.png",
 	"environment": "*",
 	"entrypoints": {
+		"fabric-datagen": [
+			"com.lying.fabric.data.HODataGeneratorsFabric"
+		],
 		"main": [
 			"com.lying.fabric.HrrmownersFabric"
 		],

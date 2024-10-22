@@ -4,6 +4,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Map.Entry;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -129,7 +130,7 @@ public class HOA
 		LOGGER.info("## HOA plan generation started ##");
 		searchStart = System.currentTimeMillis();
 		Plan finalPlan = findSatisfyingPlan(model, world);
-		LOGGER.info("## HOA plan generation ended in "+(System.currentTimeMillis() - searchStart)+"ms ##");
+		LOGGER.info("## HOA plan generation ended in {}ms ##", System.currentTimeMillis() - searchStart);
 		
 		if(finalPlan != null && !finalPlan.isBlank())
 		{
@@ -158,27 +159,25 @@ public class HOA
 		plansToCheck.add(initial);
 		
 		int iteration = 0;
-		while(!plansToCheck.isEmpty() && stateMap.getPlanFor(this::meetsObjectives) == null)
+		while(iteration < 100 && !plansToCheck.isEmpty())
 		{
-			LOGGER.info("# Trialling "+plansToCheck.size()+" plans in iteration "+(++iteration));
-			
 			// The current best plan
 			SearchEntry plan = plansToCheck.remove(0);
-			LOGGER.info(" # Current optimum: "+goalSatisfaction(plan.state()));
+			LOGGER.info(" # Trialling plan {} with {} alternatives, satisfaction {}", ++iteration, plansToCheck.size(), goalSatisfaction(plan.state()));
 			
 			// List of plans generated from our current best
 			List<SearchEntry> nextCheck = Lists.newArrayList();
 			VillageModel presentState = plan.state();
 			
 			// Iterate from our best plan to identify the next best step
-			for(Action action : actions)
+			for(Action action : actions.stream().filter(a -> a.canTakeAction(presentState)).toList())
 			{
-				if(!action.canTakeAction(presentState))
+				action.setSeed(world.random.nextLong());
+				VillageModel planModel = presentState.copy(world);
+				if(!action.applyToModel(planModel, world, true))
 					continue;
 				
-				VillageModel planModel = presentState.copy(world);
-				action.applyToModel(planModel, world, true);
-				Plan planAfter = plan.plan().copy().add(action);
+				Plan planAfter = plan.plan().copy().add(action.copy());
 				
 				// If we find a plan that satisfies all objectives, exit search immediately
 				if(meetsObjectives(planModel))
@@ -196,7 +195,7 @@ public class HOA
 			plansToCheck.sort(stateComparator);
 		}
 		
-		return stateMap.getPlanFor(this::meetsObjectives);
+		return stateMap.getBestFor(this::goalSatisfaction);
 	}
 	
 	private static record SearchEntry(VillageModel state, Plan plan)
@@ -208,7 +207,7 @@ public class HOA
 		}
 	};
 	
-	private class ModelStates
+	public static class ModelStates
 	{
 		private Map<VillageModel, Plan> states = new HashMap<>();
 		
@@ -233,12 +232,27 @@ public class HOA
 			return true;
 		}
 		
-		public Plan getPlanFor(Predicate<VillageModel> predicate)
+		/** Returns an Optional containing the first plan that matches the given condition */
+		public Optional<Plan> getPlanFor(Predicate<VillageModel> predicate)
 		{
-			for(Entry<VillageModel, Plan> entry : states.entrySet())
-				if(predicate.test(entry.getKey()))
-					return entry.getValue();
-			return null;
+			if(!states.isEmpty())
+				return states.entrySet().stream().filter(e -> predicate.test(e.getKey())).map(e -> e.getValue()).findFirst();
+			return Optional.empty();
+		}
+		
+		/** Returns the plan with the highest score according to the given evaluator */
+		public Plan getBestFor(Function<VillageModel, Float> evaluator)
+		{
+			if(states.isEmpty())
+				return Plan.blank();
+			
+			Comparator<Entry<VillageModel, Plan>> comp = (a, b) -> 
+			{
+				float scoreA = evaluator.apply(a.getKey());
+				float scoreB = evaluator.apply(b.getKey());
+				return scoreA > scoreB ? -1 : scoreA < scoreB ? 1 : 0;
+			};
+			return states.entrySet().stream().sorted(comp).findFirst().get().getValue();
 		}
 	}
 }

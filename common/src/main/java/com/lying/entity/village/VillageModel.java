@@ -190,10 +190,13 @@ public class VillageModel
 	
 	public int openConnectors() { return connectors.size(); }
 	
+	public Connector selectedConnector() { return connectors.get(0); }
+	
 	public int getTallyOf(PartType type) { return tally.getOrDefault(type, 0); }
 	
 	public boolean isEmpty() { return parts.isEmpty(); }
 	
+	/** Returns true if this model has no available connectors to add new parts */
 	public boolean cannotExpand() { return connectors.isEmpty(); }
 	
 	public boolean contains(BlockPos pos) { return parts.stream().anyMatch(part -> part.contains(pos)); }
