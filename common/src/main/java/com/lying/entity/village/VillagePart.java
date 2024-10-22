@@ -33,6 +33,7 @@ import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 
@@ -45,7 +46,7 @@ public class VillagePart
 	
 	public final PartType type;
 	public final BlockRotation rotation;
-	public BlockBox bounds;
+	private BlockBox bounds;
 	
 	/** Open connections remaining for this part */
 	private final List<Connector> connectors = Lists.newArrayList();
@@ -161,7 +162,6 @@ public class VillagePart
 	public void placeInWorld(ServerWorld world)
 	{
 		piece.generate(world, world.getStructureAccessor(), world.getChunkManager().getChunkGenerator(), random(), bounds, pivot(), false);
-		
 	}
 	
 	public Random random() { return Random.create(pivot().getX() * pivot().getZ() * pivot().getY()); }
@@ -170,6 +170,8 @@ public class VillagePart
 	
 	public BlockPos min() { return new BlockPos(bounds.getMinX(), bounds.getMinY(), bounds.getMinZ()); }
 	public BlockPos max() { return new BlockPos(bounds.getMaxX(), bounds.getMaxY(), bounds.getMaxZ()); }
+	
+	public Box bounds() { return Box.enclosing(min(), max()); }
 	
 	public boolean contains(BlockPos pos) { return bounds.contains(pos); }
 	public boolean intersects(VillagePart part) { return bounds.intersects(part.bounds); }

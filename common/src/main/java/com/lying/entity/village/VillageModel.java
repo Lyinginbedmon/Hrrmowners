@@ -9,11 +9,14 @@ import java.util.UUID;
 
 import com.google.common.collect.Lists;
 import com.lying.Hrrmowners;
+import com.lying.entity.village.Village.Resident;
 import com.lying.entity.village.ai.Connector;
 import com.lying.network.HideCubesPacket;
 import com.lying.utility.DebugCuboid;
 
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
@@ -21,10 +24,15 @@ import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.structure.StructureContext;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class VillageModel
 {
+	/* Census data representing the village's population */
+	private Map<Resident, Integer> census = new HashMap<>();
+	private int totalPop = 0;
+	
 	/** A set of VillagePart reflecting the layout of the village */
 	private final List<VillagePart> parts = Lists.newArrayList();
 	
@@ -34,21 +42,22 @@ public class VillageModel
 	/** Tally of different types of part within this model */
 	private final Map<PartType, Integer> tally = new HashMap<>();
 	
-	public boolean isEquivalent(VillageModel model)
+	/** Returns true if the two models are functionally equivalent.<br>They may still differ in arrangement or population. */
+	public static boolean isEquivalent(VillageModel modelA, VillageModel modelB)
 	{
-		if(connectors.size() == model.connectors.size())
+		if(modelA.connectors.size() == modelB.connectors.size())
 		{
-			for(Connector connector : connectors)
-				if(model.connectors.stream().noneMatch(c -> c.equals(connector)))
+			for(Connector connector : modelA.connectors)
+				if(modelB.connectors.stream().noneMatch(c -> c.equals(connector)))
 					return false;
 		}
 		else
 			return false;
 		
-		if(tally.size() == model.tally.size())
+		if(modelA.tally.size() == modelB.tally.size())
 		{
-			for(Entry<PartType, Integer> entry : tally.entrySet())
-				if(!model.tally.containsKey(entry.getKey()) || model.tally.get(entry.getKey()) != entry.getValue())
+			for(Entry<PartType, Integer> entry : modelA.tally.entrySet())
+				if(!modelB.tally.containsKey(entry.getKey()) || modelB.tally.get(entry.getKey()) != entry.getValue())
 					return false;
 		}
 		else
@@ -57,33 +66,94 @@ public class VillageModel
 		return true;
 	}
 	
+	public int population() { return totalPop; }
+	
+	public int residentsOfType(Resident type) { return Math.max(0, census.getOrDefault(type, 0)); }
+	
+	public void setResidents(Resident type, int count)
+	{
+		if(census.containsKey(type))
+			totalPop += count - residentsOfType(type);
+		
+		census.put(type, count);
+	}
+	
+	public void addResident(Resident type, int count)
+	{
+		int tally = residentsOfType(type);
+		count = MathHelper.clamp(count, -tally, Integer.MAX_VALUE);
+		census.put(type, tally + count);
+		totalPop += count;
+	}
+	
+	public void copyCensus(Village village)
+	{
+		census.clear();
+		totalPop = 0;
+		for(Resident type : Resident.values())
+			addResident(type, village.getPopulation(type));
+	}
+	
+	public <T extends LivingEntity> List<T> getEnclosedResidents(Class<T> resClass, World world, double expansion)
+	{
+		List<T> residents = Lists.newArrayList();
+		
+		// Collect unique entities within the boundaries of this village's component parts
+		for(VillagePart part : parts)
+			residents.addAll(
+				world.getEntitiesByClass(resClass, part.bounds().expand(expansion), Entity::isAlive).stream()
+					.filter(l -> residents.stream().noneMatch(l2 -> l.getUuid().equals(l2.getUuid()))).toList());
+		return residents;
+	}
+	
 	public VillageModel copy(ServerWorld world)
 	{
-		VillageModel model = new VillageModel();
-		model.readFromNbt(writeToNbt(new NbtCompound(), world), world);
-		return model;
+		return (new VillageModel()).readFromNbt(writeToNbt(new NbtCompound(), world), world);
+	}
+	
+	private void clear()
+	{
+		parts.clear();
+		connectors.clear();
+		census.clear();
+		totalPop = 0;
 	}
 	
 	public NbtCompound writeToNbt(NbtCompound nbt, ServerWorld world)
 	{
+		if(totalPop > 0)
+		{
+			NbtCompound data = new NbtCompound();
+			data.putInt("Population", totalPop);
+			NbtList tally = new NbtList();
+			census.entrySet().stream().filter(e -> e.getValue() > 0).forEach(e -> 
+			{
+				NbtCompound ent = new NbtCompound();
+				ent.putString("Class", e.getKey().asString());
+				ent.putInt("Count", e.getValue());
+				tally.add(ent);
+			});
+			data.put("Tally", tally);
+			nbt.put("Census", data);
+		}
+		
 		// Since we can't have any connectors or tallies without any parts, just return a blank compound
-		if(parts.isEmpty())
-			return nbt;
-		else
+		if(!parts.isEmpty())
 		{
 			NbtList components = new NbtList();
 			parts.forEach(p -> components.add(p.writeToNbt(new NbtCompound(), StructureContext.from(world))));
 			nbt.put("Parts", components);
+			
+			recacheConnectors(false);
+			if(!connectors.isEmpty())
+				nbt.put("Connectors", connectorsToNbt(connectors));
 		}
-		
-		if(!connectors.isEmpty())
-			nbt.put("Connectors", connectorsToNbt(connectors));
 		return nbt;
 	}
 	
 	public VillageModel readFromNbt(NbtCompound nbt, ServerWorld world)
 	{
-		parts.clear();
+		clear();
 		if(nbt.contains("Parts", NbtElement.LIST_TYPE))
 		{
 			NbtList components = nbt.getList("Parts", NbtElement.COMPOUND_TYPE);
@@ -94,9 +164,22 @@ public class VillageModel
 				});
 		}
 		
-		connectors.clear();
 		if(nbt.contains("Connectors", NbtElement.LIST_TYPE))
 			connectors.addAll(nbtToConnectors(nbt.getList("Connectors", NbtElement.COMPOUND_TYPE)));
+		
+		if(nbt.contains("Census", NbtElement.COMPOUND_TYPE))
+		{
+			NbtCompound censusData = nbt.getCompound("Census");
+			totalPop = censusData.getInt("Population");
+			NbtList tally = censusData.getList("Tally", NbtElement.COMPOUND_TYPE);
+			for(int i=0; i<tally.size(); i++)
+			{
+				NbtCompound entry = tally.getCompound(i);
+				Resident type = Resident.fromString(entry.getString("Class"));
+				if(type != null)
+					census.put(type, entry.getInt("Count"));
+			}
+		}
 		
 		return this;
 	}
@@ -105,7 +188,9 @@ public class VillageModel
 	
 	public List<Connector> connectors() { return connectors; }
 	
-	public int getCount(PartType type) { return tally.getOrDefault(type, 0); }
+	public int openConnectors() { return connectors.size(); }
+	
+	public int getTallyOf(PartType type) { return tally.getOrDefault(type, 0); }
 	
 	public boolean isEmpty() { return parts.isEmpty(); }
 	
@@ -126,7 +211,7 @@ public class VillageModel
 	
 	public boolean addPart(VillagePart part, ServerWorld world, boolean shouldNotify)
 	{
-		if(parts.stream().anyMatch(part2 -> part2.id.equals(part.id) || part2.bounds.intersects(part.bounds)))
+		if(parts.stream().anyMatch(part2 -> part2.id.equals(part.id) || part2.bounds().intersects(part.bounds())))
 			return false;
 		
 		parts.add(part);
@@ -146,13 +231,10 @@ public class VillageModel
 		{
 			List<Connector> remove = Lists.newArrayList();
 			for(Connector connector : part.openConnections())
-			{
-				List<VillagePart> containers = getContainers(connector.linkPos());
-				if(containers.stream().anyMatch(c -> !c.id.equals(part.id)))
+				if(getContainers(connector.linkPos()).stream().anyMatch(c -> !c.id.equals(part.id)))
 					remove.add(connector);
 				else
 					connectors.add(connector);
-			}
 			remove.forEach(info -> part.lockConnectorAt(info.pos, shouldNotify));
 		}
 	}

@@ -1,6 +1,5 @@
 package com.lying.entity.village.ai.action;
 
-import com.lying.entity.village.Village;
 import com.lying.entity.village.VillageModel;
 
 import net.minecraft.server.world.ServerWorld;
@@ -24,5 +23,5 @@ public abstract class Action
 	/** Returns whether or not this action is available to the given model */
 	public abstract boolean canTakeAction(VillageModel model);
 	
-	public abstract void applyToModel(VillageModel model, Village village, ServerWorld world, boolean isSimulated);
+	public abstract void applyToModel(VillageModel model, ServerWorld world, boolean isSimulated);
 }

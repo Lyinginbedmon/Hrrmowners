@@ -2,7 +2,9 @@ package com.lying.entity.village.ai.goal;
 
 import com.lying.entity.village.VillageModel;
 
-public abstract class Goal
+@FunctionalInterface
+public interface Goal
 {
-	public abstract float satisfaction(VillageModel model);
+	/* Returns the satisfaction of this goal by the given model, between 0 and 1 */
+	public float satisfaction(VillageModel model);
 }

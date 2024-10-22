@@ -38,5 +38,11 @@ public class ClientBus
 			if(player.getUuid() == mc.player.getUuid())
 				HrrmownersClient.VILLAGE_RENDERER.clear();
 		});
+		
+		PlayerEvent.PLAYER_QUIT.register(player -> 
+		{
+			if(player.getUuid().equals(mc.player.getUuid()))
+				HrrmownersClient.VILLAGE_RENDERER.clear();
+		});
 	}
 }

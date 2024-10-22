@@ -2,6 +2,8 @@ package com.lying.entity.village.ai;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+
 import com.google.common.collect.Lists;
 import com.lying.entity.village.ai.action.Action;
 
@@ -14,6 +16,12 @@ public class Plan
 	private float totalCost = 0F;
 	
 	private Plan() { }
+	
+	public void addToLog(Logger log)
+	{
+		log.info("# Plan of {} actions, total cost {} #", actions.size(), totalCost);
+		actions.forEach(a -> log.info(" # {}", a.registryName().toString()));
+	}
 	
 	public static Plan blank() { return new Plan(); }
 	
@@ -32,11 +40,9 @@ public class Plan
 		return this;
 	}
 	
-	public float cost() { return totalCost; }
-	
 	public int length() { return actions.size(); }
 	
-	public float value() { return length() * cost(); }
+	public float cost() { return totalCost; }
 	
 	public Plan copy()
 	{

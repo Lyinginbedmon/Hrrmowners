@@ -13,6 +13,10 @@ import com.lying.Hrrmowners;
 import com.lying.entity.SurinaEntity;
 import com.lying.entity.village.ai.Connector;
 import com.lying.entity.village.ai.HOA;
+import com.lying.entity.village.ai.action.ActionPlacePart;
+import com.lying.entity.village.ai.goal.GoalHaveOpenConnectors;
+import com.lying.entity.village.ai.goal.GoalTypeMinimum;
+import com.lying.reference.Reference;
 
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtOps;
@@ -31,6 +35,7 @@ import net.minecraft.structure.pool.StructurePoolElementType;
 import net.minecraft.structure.pool.alias.StructurePoolAliasLookup;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.village.VillagerProfession;
@@ -49,7 +54,7 @@ public class Village
 	/** A set of VillagePart reflecting the layout of the village */
 	private final VillageModel model = new VillageModel();
 	
-	private final HOA hoa = new HOA();
+	private final HOA hoa;
 	
 	/** True if this village exists in the world yet */
 	private boolean inWorld = false;
@@ -62,6 +67,16 @@ public class Village
 		id = idIn;
 		dimension = dimIn;
 		biome = biomeIn;
+		
+		// Prepare HOA
+		hoa = new HOA(List.of(), List.of(
+				new GoalHaveOpenConnectors(3), 
+				new GoalTypeMinimum(PartType.STREET, 1),
+				new GoalTypeMinimum(PartType.HOUSE, VillageModel::population),
+				new GoalTypeMinimum(PartType.WORK, m -> m.residentsOfType(Resident.WORKER))
+				)); 
+		for(PartType type : PartType.values())
+			hoa.addAction(new ActionPlacePart(type, biome));
 	}
 	
 	public UUID id() { return this.id; }
@@ -90,7 +105,18 @@ public class Village
 	{
 		// Periodically evaluate goals and update plan if necessary
 		if(hoa.hasPlan())
+		{
 			hoa.tickPlan(world, this);
+			return;
+		}
+		
+		// Update residential census
+		if(world.getTime()%Reference.Values.TICKS_PER_MINUTE == 0)
+		{
+			residents.clear();
+			residents.addAll(model.getEnclosedResidents(SurinaEntity.class, world, 3D));
+			LOGGER.info("# Updated village census: {}", residents.size());
+		}
 	}
 	
 	public NbtCompound writeToNbt(NbtCompound nbt, ServerWorld world)
@@ -247,7 +273,7 @@ public class Village
 		return Optional.of(new VillagePart(UUID.randomUUID(), type, poolStructurePiece, manager));
 	}
 	
-	public static enum Resident
+	public static enum Resident implements StringIdentifiable
 	{
 		/** Adults capable of having a profession */
 		WORKER(s -> !s.isBaby() && s.getVillagerData().getProfession() != VillagerProfession.NITWIT),
@@ -264,5 +290,16 @@ public class Village
 		}
 		
 		public boolean test(SurinaEntity ent) { return check.test(ent); }
+		
+		public String asString() { return name().toLowerCase(); }
+		
+		@Nullable
+		public static Resident fromString(String name)
+		{
+			for(Resident res : Resident.values())
+				if(res.asString().equalsIgnoreCase(name))
+					return res;
+			return null;
+		}
 	}
 }

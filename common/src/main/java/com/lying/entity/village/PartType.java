@@ -13,11 +13,11 @@ import net.minecraft.world.biome.Biome;
 
 public enum PartType implements StringIdentifiable
 {
-	CENTER(0x0000FF, biome -> StructurePools.ofVanilla("village/desert/town_centers")),
-	HOUSE(0x00FF00, biome -> StructurePools.ofVanilla("village/desert/houses")),
-	WORK(0xFF0000, biome -> StructurePools.ofVanilla("village/desert/houses")),
-	STREET(0xFFFFFF, biome -> StructurePools.ofVanilla("village/desert/streets")),
-	CORNER(0xFFFFFF, biome -> StructurePools.ofVanilla("village/desert/streets"));
+	CENTER(0x0000FF, 5F, biome -> StructurePools.ofVanilla("village/desert/town_centers")),
+	HOUSE(0x00FF00, 2F, biome -> StructurePools.ofVanilla("village/desert/houses")),
+	WORK(0xFF0000, 2F, biome -> StructurePools.ofVanilla("village/desert/houses")),
+	STREET(0xFFFFFF, 1F, biome -> StructurePools.ofVanilla("village/desert/streets")),
+	CORNER(0xFFFFFF, 1F, biome -> StructurePools.ofVanilla("village/desert/streets"));
 	
 	@SuppressWarnings("deprecation")
 	public static final StringIdentifiable.EnumCodec<PartType> CODEC = StringIdentifiable.createCodec(PartType::values);
@@ -33,16 +33,20 @@ public enum PartType implements StringIdentifiable
 			"shepherd",
 			"tanner");
 	
+	private final float buildCost;
 	private final int colour;
 	private final Function<RegistryKey<Biome>, RegistryKey<StructurePool>> structurePool;
 	
-	private PartType(int col, Function<RegistryKey<Biome>, RegistryKey<StructurePool>> poolKeyIn)
+	private PartType(int col, float cost, Function<RegistryKey<Biome>, RegistryKey<StructurePool>> poolKeyIn)
 	{
+		buildCost = cost;
 		colour = col;
 		structurePool = poolKeyIn;
 	}
 	
 	public int color() { return colour; }
+	
+	public float costToBuild() { return buildCost; }
 	
 	public String asString() { return name().toLowerCase(); }
 	

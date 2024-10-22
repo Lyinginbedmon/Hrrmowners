@@ -12,19 +12,23 @@ import com.lying.entity.village.VillagePart;
 import com.lying.entity.village.ai.Connector;
 import com.lying.reference.Reference;
 
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.biome.Biome;
 
 public class ActionPlacePart extends Action
 {
 	final PartType type;
+	final RegistryKey<Biome> style;
 	
-	public ActionPlacePart(PartType typeIn)
+	public ActionPlacePart(PartType typeIn, RegistryKey<Biome> styleIn)
 	{
-		super(Identifier.of(Reference.ModInfo.MOD_ID, "place_"+typeIn.asString()), 1F);
+		super(Identifier.of(Reference.ModInfo.MOD_ID, "place_"+typeIn.asString()), typeIn.costToBuild());
 		type = typeIn;
+		style = styleIn;
 	}
 	
 	public boolean canTakeAction(VillageModel model)
@@ -32,7 +36,7 @@ public class ActionPlacePart extends Action
 		return !model.cannotExpand();
 	}
 	
-	public void applyToModel(VillageModel model, Village village, ServerWorld world, boolean isSimulated)
+	public void applyToModel(VillageModel model, ServerWorld world, boolean isSimulated)
 	{
 		BlockRotation[] rotations = BlockRotation.values();
 		BlockRotation baseRotation = rotations[world.getRandom().nextInt(rotations.length)];
@@ -43,7 +47,7 @@ public class ActionPlacePart extends Action
 		for(int i=0; i<rotations.length; i++)
 		{
 			BlockRotation rotation = rotations[(baseRotation.ordinal() + i)%rotations.length];
-			Optional<VillagePart> partOpt = Village.makeNewPart(BlockPos.ORIGIN, rotation, world, type, type.getStructurePool(village.biome()), world.random);
+			Optional<VillagePart> partOpt = Village.makeNewPart(BlockPos.ORIGIN, rotation, world, type, type.getStructurePool(style), world.random);
 			if(partOpt.isEmpty())
 			{
 				Hrrmowners.LOGGER.error("Failed to create new part to expand village");

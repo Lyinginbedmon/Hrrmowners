@@ -1,25 +1,22 @@
 package com.lying.entity.village.ai;
 
-import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import com.google.common.collect.Lists;
 import com.lying.Hrrmowners;
-import com.lying.entity.village.PartType;
 import com.lying.entity.village.Village;
 import com.lying.entity.village.VillageModel;
 import com.lying.entity.village.ai.action.Action;
-import com.lying.entity.village.ai.action.ActionPlacePart;
 import com.lying.entity.village.ai.goal.Goal;
-import com.lying.entity.village.ai.goal.GoalHaveOpenConnectors;
-import com.lying.entity.village.ai.goal.GoalTypeMinimum;
-import com.mojang.datafixers.util.Pair;
 
 import net.minecraft.server.world.ServerWorld;
 
@@ -30,21 +27,41 @@ import net.minecraft.server.world.ServerWorld;
 public class HOA
 {
 	private static final Logger LOGGER = Hrrmowners.LOGGER;
+	private static final Comparator<Action> ACTION_SORTER = (a, b) -> a.cost() < b.cost() ? -1 : a.cost() > b.cost() ? 1 : 0;
+	private static long searchStart;
 	
 	private final List<Action> actions = Lists.newArrayList();
 	
 	private final List<Goal> goals = Lists.newArrayList();
+	private final Comparator<SearchEntry> stateComparator = (a, b) -> 
+	{
+		float satA = a.totalValue(this::goalSatisfaction);
+		float satB = b.totalValue(this::goalSatisfaction);
+		return satA > satB ? -1 : satA < satB ? 1 : 0;
+	};
 	
 	private List<Action> currentPlan = Lists.newArrayList();
 	
 	public HOA()
 	{
-		for(PartType type : PartType.values())
-			actions.add(new ActionPlacePart(type));
-		
-		goals.add(new GoalHaveOpenConnectors(3));
-		goals.add(new GoalTypeMinimum(PartType.HOUSE, 3));
-		goals.add(new GoalTypeMinimum(PartType.STREET, 1));
+		this(List.of(), List.of());
+	}
+	
+	public HOA(List<Action> actionsIn, List<Goal> goalsIn)
+	{
+		actionsIn.forEach(a -> addAction(a));
+		goalsIn.forEach(g -> addGoal(g));
+	}
+	
+	public void addAction(Action actionIn)
+	{
+		actions.add(actionIn);
+		actions.sort(ACTION_SORTER);
+	}
+	
+	public void addGoal(Goal goalIn)
+	{
+		goals.add(goalIn);
 	}
 	
 	public boolean hasPlan() { return !currentPlan.isEmpty(); }
@@ -60,24 +77,38 @@ public class HOA
 		if(currentPlan.isEmpty())
 			return;
 		
-		currentPlan.get(0).applyToModel(village.model(), village, world, false);
-		currentPlan.remove(0);
+		Action nextStep = currentPlan.get(0);
+		if(nextStep.canTakeAction(village.model()))
+		{
+			currentPlan.get(0).applyToModel(village.model(), world, false);
+			currentPlan.remove(0);
+		}
+		else
+			currentPlan.clear();
 	}
 	
+	/** Returns true if the given model evaluates to 100% goal satisfaction */
 	public boolean meetsObjectives(VillageModel model)
 	{
 		return goals.isEmpty() || goals.stream().allMatch(g -> g.satisfaction(model) == 1F);
 	}
 	
+	/** Returns the overal goal satisfaction of the given model */
+	public float goalSatisfaction(VillageModel model)
+	{
+		if(goals.isEmpty())
+			return 1F;
+		
+		float total = 0F;
+		for(Goal g : goals)
+			total += g.satisfaction(model);
+		return total / goals.size();
+	}
+	
 	public boolean tryGeneratePlan(final VillageModel model, final Village village, ServerWorld world)
 	{
-		/** No goals registered, assume any state is acceptable */
-		if(goals.isEmpty() || meetsObjectives(model))
-		{
-			LOGGER.info("# HOA determined no plan necessary");
-			setPlan(Plan.blank());
-			return true;
-		}
+		// Copy the village census into the village model, so the planner can track census-dependent goals
+		model.copyCensus(village);
 		
 		/** No actions available, presume we cannot make any plan */
 		if(actions.isEmpty())
@@ -87,48 +118,24 @@ public class HOA
 			return false;
 		}
 		
-		// Map of village states to the shortest & cheapest plan that reached them
-		ModelStates stateMap = new ModelStates();
-		stateMap.put(model.copy(world), Plan.blank());	// Initial state should always be achievable with a blank plan
-		
-		// List of plans to check next
-		List<Pair<VillageModel, Plan>> plansToCheck = Lists.newArrayList();
-		plansToCheck.add(Pair.of(model.copy(world), Plan.blank()));
-		
-		int iteration = 0;
-		while(stateMap.keySet().stream().noneMatch(m -> meetsObjectives(m)) && !plansToCheck.isEmpty())
+		/** No goals registered, assume any state is acceptable */
+		if(goals.isEmpty() || meetsObjectives(model))
 		{
-			System.out.println("# Trialling "+plansToCheck.size()+" plans in iteration "+(++iteration));
-			List<Pair<VillageModel, Plan>> nextCheck = Lists.newArrayList();
-			for(Pair<VillageModel, Plan> plan : plansToCheck)
-			{
-				// Iterate from each state to find the potential moves from it
-				VillageModel presentState = plan.getFirst();
-				for(Action action : actions)
-				{
-					if(!action.canTakeAction(presentState)) continue;
-					
-					VillageModel planModel = presentState.copy(world);
-					action.applyToModel(planModel, village, world, true);
-					Plan planAfter = plan.getSecond().copy().add(action);
-					
-					nextCheck.add(Pair.of(planModel, planAfter));
-				}
-			}
-			
-			// Log each new state in the state map
-			plansToCheck.clear();
-			for(Pair<VillageModel, Plan> plan : nextCheck)
-				if(stateMap.put(plan.getFirst(), plan.getSecond()))
-					plansToCheck.add(plan);
+			LOGGER.info("# HOA determined no plan necessary");
+			setPlan(Plan.blank());
+			return true;
 		}
 		
-		Plan finalPlan = stateMap.getPlanFor(this::meetsObjectives);
+		LOGGER.info("## HOA plan generation started ##");
+		searchStart = System.currentTimeMillis();
+		Plan finalPlan = findSatisfyingPlan(model, world);
+		LOGGER.info("## HOA plan generation ended in "+(System.currentTimeMillis() - searchStart)+"ms ##");
+		
 		if(finalPlan != null && !finalPlan.isBlank())
 		{
-			setPlan(finalPlan);
 			LOGGER.info("# HOA generated a plan");
-			currentPlan.forEach(a -> LOGGER.info(" # "+a.registryName().getPath()));
+			finalPlan.addToLog(LOGGER);
+			setPlan(finalPlan);
 			return true;
 		}
 		else
@@ -137,21 +144,88 @@ public class HOA
 		return false;
 	}
 	
+	@Nullable
+	private Plan findSatisfyingPlan(final VillageModel model, ServerWorld world)
+	{
+		SearchEntry initial = new SearchEntry(model.copy(world), Plan.blank());
+		
+		// Map of village states to the shortest & cheapest plan that reached them
+		ModelStates stateMap = new ModelStates();
+		stateMap.put(initial);	// Initial state should always be achievable with a blank plan
+		
+		// List of plans to check next
+		List<SearchEntry> plansToCheck = Lists.newArrayList();
+		plansToCheck.add(initial);
+		
+		int iteration = 0;
+		while(!plansToCheck.isEmpty() && stateMap.getPlanFor(this::meetsObjectives) == null)
+		{
+			LOGGER.info("# Trialling "+plansToCheck.size()+" plans in iteration "+(++iteration));
+			
+			// The current best plan
+			SearchEntry plan = plansToCheck.remove(0);
+			LOGGER.info(" # Current optimum: "+goalSatisfaction(plan.state()));
+			
+			// List of plans generated from our current best
+			List<SearchEntry> nextCheck = Lists.newArrayList();
+			VillageModel presentState = plan.state();
+			
+			// Iterate from our best plan to identify the next best step
+			for(Action action : actions)
+			{
+				if(!action.canTakeAction(presentState))
+					continue;
+				
+				VillageModel planModel = presentState.copy(world);
+				action.applyToModel(planModel, world, true);
+				Plan planAfter = plan.plan().copy().add(action);
+				
+				// If we find a plan that satisfies all objectives, exit search immediately
+				if(meetsObjectives(planModel))
+					return planAfter;
+				
+				nextCheck.add(new SearchEntry(planModel, planAfter));
+			}
+			
+			// Log each new state in the state map
+			for(SearchEntry p : nextCheck)
+				if(stateMap.put(p.state(), p.plan()))
+					plansToCheck.add(p);
+			
+			// Sort plans by overall goal satisfaction to prioritise checking better plans first
+			plansToCheck.sort(stateComparator);
+		}
+		
+		return stateMap.getPlanFor(this::meetsObjectives);
+	}
+	
+	private static record SearchEntry(VillageModel state, Plan plan)
+	{
+		// FIXME Prioritise entries with greater satisfaction and cheaper-on-average plans
+		public float totalValue(Function<VillageModel,Float> satisfaction)
+		{
+			return satisfaction.apply(state) / plan.cost();
+		}
+	};
+	
 	private class ModelStates
 	{
 		private Map<VillageModel, Plan> states = new HashMap<>();
 		
-		public Collection<VillageModel> keySet() { return states.keySet(); }
+		public boolean put(SearchEntry pair)
+		{
+			return put(pair.state(), pair.plan());
+		}
 		
+		/** Adds the given plan and model to the map, returning true.<br>Returns false if an existing cheaper plan exists for the same model state. */
 		public boolean put(VillageModel model, Plan plan)
 		{
 			// If an existing plan results in the same model state, store only the best plan
 			for(Entry<VillageModel, Plan> entry : states.entrySet())
-				if(entry.getKey().isEquivalent(model))
+				if(VillageModel.isEquivalent(entry.getKey(), model))
 				{
-					if(entry.getValue().value() < plan.value())
+					if(entry.getValue().cost() < plan.cost())
 						return false;
-					
 					break;
 				}
 			
