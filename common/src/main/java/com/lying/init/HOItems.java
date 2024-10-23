@@ -10,6 +10,7 @@ import com.lying.reference.Reference;
 import dev.architectury.registry.CreativeTabRegistry;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
+import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
@@ -21,6 +22,7 @@ public class HOItems
 {
 	public static final DeferredRegister<ItemGroup> TABS = DeferredRegister.create(Reference.ModInfo.MOD_ID, RegistryKeys.ITEM_GROUP);
 	public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(Reference.ModInfo.MOD_ID, RegistryKeys.ITEM);
+	private static int tally = 0;
 	
 	public static final RegistrySupplier<ItemGroup> HRRMOWNERS_TAB = TABS.register(Reference.ModInfo.MOD_ID, () -> CreativeTabRegistry.create(
 			Text.translatable("itemGroup."+Reference.ModInfo.MOD_ID+".item_group"), 
@@ -28,8 +30,11 @@ public class HOItems
 	
 	public static final RegistrySupplier<Item> SURINA_SPAWN_EGG	= register("surina_spawn_egg", () -> new SpawnEggItem(HOEntityTypes.SURINA.get(), 0xD8CFB0, 0xA19264, new Item.Settings().arch$tab(HRRMOWNERS_TAB)));
 	
+	public static final RegistrySupplier<Item> SAND_FIRMAMENT_BLOCK = register("sand_firmament", () -> new BlockItem(HOBlocks.SAND_FIRMAMENT.get(), new Item.Settings().arch$tab(HRRMOWNERS_TAB)));
+	
 	private static RegistrySupplier<Item> register(String nameIn, Supplier<Item> itemIn)
 	{
+		++tally;
 		return ITEMS.register(prefix(nameIn), itemIn);
 	}
 	
@@ -37,6 +42,6 @@ public class HOItems
 	{
 		ITEMS.register();
 		TABS.register();
-		Hrrmowners.LOGGER.info(" # Registered items");
+		Hrrmowners.LOGGER.info(" # Registered {} items", tally);
 	}
 }

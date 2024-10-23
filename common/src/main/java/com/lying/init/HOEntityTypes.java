@@ -19,6 +19,7 @@ import net.minecraft.registry.RegistryKeys;
 public class HOEntityTypes
 {
 	public static final DeferredRegister<EntityType<?>> ENTITY_TYPES = DeferredRegister.create(Reference.ModInfo.MOD_ID, RegistryKeys.ENTITY_TYPE);
+	private static int tally = 0;
 	
 	public static final RegistrySupplier<EntityType<SurinaEntity>> SURINA	= register("surina", () -> 
 	{
@@ -28,13 +29,14 @@ public class HOEntityTypes
 	
 	private static <T extends Entity> RegistrySupplier<EntityType<T>> register(String name, Supplier<EntityType<T>> entry)
 	{
+		++tally;
 		return ENTITY_TYPES.register(Reference.ModInfo.prefix(name), entry);
 	}
 	
 	public static void init()
 	{
 		ENTITY_TYPES.register();
-		Hrrmowners.LOGGER.info(" # Registered entity types");
+		Hrrmowners.LOGGER.info(" # Registered {} entity types", tally);
 	}
 	
 	public static void registerAttributeContainers(BiConsumer<EntityType<? extends LivingEntity>, DefaultAttributeContainer.Builder> funcIn)

@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 import com.google.common.collect.Lists;
 import com.lying.Hrrmowners;
@@ -23,6 +24,7 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.structure.StructureContext;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
@@ -40,7 +42,7 @@ public class VillageModel
 	private final List<Connector> connectors = Lists.newArrayList();
 	
 	/** Tally of different types of part within this model */
-	private final Map<PartType, Integer> tally = new HashMap<>();
+	private final Map<Identifier, Integer> tally = new HashMap<>();
 	
 	/** Returns true if the two models are functionally equivalent.<br>They may still differ in arrangement or population. */
 	public static boolean isEquivalent(VillageModel modelA, VillageModel modelB)
@@ -56,7 +58,7 @@ public class VillageModel
 		
 		if(modelA.tally.size() == modelB.tally.size())
 		{
-			for(Entry<PartType, Integer> entry : modelA.tally.entrySet())
+			for(Entry<Identifier, Integer> entry : modelA.tally.entrySet())
 				if(!modelB.tally.containsKey(entry.getKey()) || modelB.tally.get(entry.getKey()) != entry.getValue())
 					return false;
 		}
@@ -160,7 +162,7 @@ public class VillageModel
 			for(int i=0; i<components.size(); i++)
 				VillagePart.readFromNbt(components.getCompound(i), world).ifPresent(p -> {
 					parts.add(p);
-					tally.put(p.type, tally.getOrDefault(p.type, 0) + 1);
+					tally.put(p.type.registryName(), tally.getOrDefault(p.type.registryName(), 0) + 1);
 				});
 		}
 		
@@ -190,9 +192,11 @@ public class VillageModel
 	
 	public int openConnectors() { return connectors.size(); }
 	
+	public int openConnectors(Predicate<Connector> predicate) { return (int)connectors.stream().filter(predicate).count(); }
+	
 	public Connector selectedConnector() { return connectors.get(0); }
 	
-	public int getTallyOf(PartType type) { return tally.getOrDefault(type, 0); }
+	public int getTallyOf(PartType type) { return tally.getOrDefault(type.registryName(), 0); }
 	
 	public boolean isEmpty() { return parts.isEmpty(); }
 	
@@ -218,7 +222,7 @@ public class VillageModel
 			return false;
 		
 		parts.add(part);
-		tally.put(part.type, tally.getOrDefault(part.type, 0) + 1);
+		tally.put(part.type.registryName(), tally.getOrDefault(part.type.registryName(), 0) + 1);
 		
 		recacheConnectors(shouldNotify);
 		if(shouldNotify)

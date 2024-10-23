@@ -188,7 +188,7 @@ public class HOA
 			
 			// Log each new state in the state map
 			for(SearchEntry p : nextCheck)
-				if(stateMap.put(p.state(), p.plan()))
+				if(stateMap.put(p.state(), p.plan()))	// Ignore any plans that reach a previously-calculated state by a less efficient means
 					plansToCheck.add(p);
 			
 			// Sort plans by overall goal satisfaction to prioritise checking better plans first

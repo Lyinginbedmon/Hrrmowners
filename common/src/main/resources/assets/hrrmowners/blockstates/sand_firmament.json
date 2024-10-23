@@ -1,0 +1,14 @@
+{
+	"variants": {
+		"":[
+				{ "model": "hrrmowners:block/sand_firmament_0" },
+				{ "model": "hrrmowners:block/sand_firmament_1"},
+				{ "model": "hrrmowners:block/sand_firmament_0", "y": 90 },
+				{ "model": "hrrmowners:block/sand_firmament_1", "y": 90 },
+				{ "model": "hrrmowners:block/sand_firmament_0", "y": 180 },
+				{ "model": "hrrmowners:block/sand_firmament_1", "y": 180 },
+				{ "model": "hrrmowners:block/sand_firmament_0", "y": 270 },
+				{ "model": "hrrmowners:block/sand_firmament_1", "y": 270 }
+			]
+	}
+}

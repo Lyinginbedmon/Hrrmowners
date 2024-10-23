@@ -16,6 +16,7 @@ import com.lying.utility.DebugCuboid;
 
 import net.minecraft.block.Blocks;
 import net.minecraft.block.JigsawBlock;
+import net.minecraft.block.entity.JigsawBlockEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtOps;
@@ -123,7 +124,10 @@ public class VillagePart
 	
 	public static boolean isConnector(StructureBlockInfo info, BlockBox bounds)
 	{
-		return info.state().isOf(Blocks.JIGSAW) && !bounds.contains(info.pos().offset(JigsawBlock.getFacing(info.state())));
+		return 
+				info.state().isOf(Blocks.JIGSAW) && 
+				PartType.byID(Identifier.of(info.nbt().getString(JigsawBlockEntity.TARGET_KEY))) != null && 
+				!bounds.contains(info.pos().offset(JigsawBlock.getFacing(info.state())));
 	}
 	
 	public void translate(BlockPos translation, StructureTemplateManager templateManager)
@@ -145,7 +149,7 @@ public class VillagePart
 			BlockPos pos = info.pos;
 			boolean bl = pos.getSquaredDistance(position) == 0D;
 			if(bl && shouldNotify)
-				Hrrmowners.forAllPlayers(player -> HideCubesPacket.send(player, new DebugCuboid(pos, pos, PartType.WORK, info.name)));
+				Hrrmowners.forAllPlayers(player -> HideCubesPacket.send(player, new DebugCuboid(pos, pos, PartType.WORK.get(), info.name)));
 			return bl;
 		});
 	}
@@ -187,6 +191,6 @@ public class VillagePart
 	public void collectDebugCuboids(List<DebugCuboid> collection)
 	{
 		collection.add(new DebugCuboid(min(), max(), type, ""));
-		connectors.forEach(info -> collection.add(new DebugCuboid(info.pos, info.pos, PartType.WORK, info.name)));
+		connectors.forEach(info -> collection.add(new DebugCuboid(info.pos, info.pos, PartType.WORK.get(), info.name)));
 	}
 }

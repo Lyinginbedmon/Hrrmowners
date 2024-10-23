@@ -30,10 +30,15 @@ public class HOTemplatePoolProvider
 				create("village/desert/streets/t_junction", 1), 
 				create("village/desert/streets/crossroads", 1)), StructurePool.Projection.TERRAIN_MATCHING));
 		context.register(SurinaVillageData.DESERT_CORNER_KEY, new StructurePool(registry, ImmutableList.of(
-				create("village/desert/corneres/corner_01", 1),
-				create("village/desert/corneres/corner_02", 1),
-				create("village/desert/corneres/corner_03", 1)
+				create("village/desert/corners/corner_01", 1),
+				create("village/desert/corners/corner_02", 1),
+				create("village/desert/corners/corner_03", 1)
 				), StructurePool.Projection.TERRAIN_MATCHING));
+		context.register(SurinaVillageData.DESERT_CENTER_KEY, new StructurePool(registry, ImmutableList.of(
+				create("village/desert/centers/center_01", 1),
+				create("village/desert/centers/center_02", 1),
+				create("village/desert/centers/center_03", 1)
+				), StructurePool.Projection.RIGID));
 	}
 	
 	private static Pair<Function<Projection, ? extends StructurePoolElement>, Integer> create(String name, int weight)

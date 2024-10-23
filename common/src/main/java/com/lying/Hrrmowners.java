@@ -7,7 +7,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
+import com.lying.entity.village.PartType;
 import com.lying.entity.village.VillageManager;
+import com.lying.init.HOBlocks;
 import com.lying.init.HOCommands;
 import com.lying.init.HOEntityTypes;
 import com.lying.init.HOItems;
@@ -49,8 +51,10 @@ public final class Hrrmowners
     	ServerBus.registerEventHandlers();
     	
     	HOCommands.init();
+    	HOBlocks.init();
     	HOEntityTypes.init();
     	HOItems.init();
+    	PartType.init();
     }
     
     public static void forAllPlayers(Consumer<ServerPlayerEntity> consumer) { PLAYERS.forEach(player -> consumer.accept(player)); }

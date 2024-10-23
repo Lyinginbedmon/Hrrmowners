@@ -4,6 +4,8 @@ import java.util.Optional;
 
 import org.jetbrains.annotations.Nullable;
 
+import com.lying.entity.village.PartType;
+
 import net.minecraft.block.BlockState;
 import net.minecraft.block.JigsawBlock;
 import net.minecraft.block.entity.JigsawBlockEntity;
@@ -12,6 +14,7 @@ import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.registry.Registries;
 import net.minecraft.structure.StructureTemplate.StructureBlockInfo;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 
@@ -21,7 +24,7 @@ public class Connector
 	
 	public final BlockPos pos;
 	public final Direction facing;
-	
+	public final Identifier partID;
 	public final String name;
 	
 	public Connector(StructureBlockInfo infoIn)
@@ -30,13 +33,14 @@ public class Connector
 		pos = info.pos();
 		facing = JigsawBlock.getFacing(info.state());
 		name = info.nbt().getString(JigsawBlockEntity.NAME_KEY);
+		partID = Identifier.of(info.nbt().getString(JigsawBlockEntity.TARGET_KEY));
 	}
 	
 	public BlockPos linkPos() { return pos.offset(facing); }
 	
 	public boolean linksTo(Connector b)
 	{
-		return b.facing == facing.getOpposite();
+		return b.facing == facing.getOpposite() && canLinkTo(b.type());
 	}
 	
 	public boolean equals(Connector b)
@@ -44,7 +48,23 @@ public class Connector
 		return 
 				b.pos.isWithinDistance(pos, 0.5D) &&
 				b.facing == facing &&
+				b.partID == partID &&
 				NbtHelper.matches(b.info.nbt(), info.nbt(), true);
+	}
+	
+	/** Returns the PartType that this connector connects to */
+	public PartType type() { return PartType.byID(partID); }
+	
+	public boolean canLinkTo(PartType... set)
+	{
+		PartType type = type();
+		if(type == null)
+			return true;
+		
+		for(PartType t : set)
+			if(t == null || type.canConnectTo(t))
+				return true;;
+		return false;
 	}
 	
 	public NbtCompound toNbt()

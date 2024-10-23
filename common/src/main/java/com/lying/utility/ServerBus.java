@@ -34,10 +34,10 @@ public class ServerBus
 						.forEach(piece -> comps.add(DebugCuboid.fromStructurePiece(piece))));
 			comps.removeIf(a -> a == null);
 			
-			LOGGER.info("Found "+comps.size()+" structure pieces near "+player.getChunkPos().toString());
+			LOGGER.info("Found {} structure pieces near {}", comps.size(), player.getChunkPos().toString());
 			Map<PartType, Integer> tallies = new HashMap<>();
 			comps.forEach(comp -> tallies.put(comp.type(), tallies.getOrDefault(comp.type(), 0) + 1));
-			tallies.entrySet().forEach(entry -> LOGGER.info(" # "+entry.getKey().name()+" - "+entry.getValue()));
+			tallies.entrySet().forEach(entry -> LOGGER.info(" # {} - {}", entry.getKey().registryName().getPath(), entry.getValue()));
 			ShowCubesPacket.send(player, comps);
 		});
 		PlayerEvent.PLAYER_QUIT.register(player -> Hrrmowners.PLAYERS.remove(player));

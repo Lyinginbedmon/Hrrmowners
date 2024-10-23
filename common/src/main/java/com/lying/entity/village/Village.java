@@ -14,7 +14,7 @@ import com.lying.entity.SurinaEntity;
 import com.lying.entity.village.ai.Connector;
 import com.lying.entity.village.ai.HOA;
 import com.lying.entity.village.ai.action.ActionPlacePart;
-import com.lying.entity.village.ai.goal.GoalHaveOpenConnectors;
+import com.lying.entity.village.ai.goal.GoalHaveConnectors;
 import com.lying.entity.village.ai.goal.GoalTypeMinimum;
 import com.lying.reference.Reference;
 
@@ -70,12 +70,13 @@ public class Village
 		
 		// Prepare HOA
 		hoa = new HOA(List.of(), List.of(
-				new GoalHaveOpenConnectors(3), 
+				new GoalHaveConnectors(3, t -> t.canLinkTo(PartType.STREET.get())), 
+				new GoalHaveConnectors(1, t -> t.canLinkTo(PartType.HOUSE.get())),
 				new GoalTypeMinimum(PartType.STREET, 1),
-//				new GoalTypeMinimum(PartType.CENTER, m -> m.residentsOfType(Resident.QUEEN)),
 				new GoalTypeMinimum(PartType.HOUSE, VillageModel::population),
 				new GoalTypeMinimum(PartType.WORK, m -> m.residentsOfType(Resident.WORKER))
-				)); 
+				));
+		
 		for(PartType type : PartType.values())
 			hoa.addAction(new ActionPlacePart(type, biome));
 	}
@@ -156,7 +157,7 @@ public class Village
 	public boolean grow(ServerWorld world)
 	{
 		Random rand = world.getRandom();
-		PartType type = PartType.values()[rand.nextInt(PartType.values().length)];
+		PartType type = PartType.values().get(rand.nextInt(PartType.values().size()));
 		return tryAddOfType(world, type, rand);
 	}
 	

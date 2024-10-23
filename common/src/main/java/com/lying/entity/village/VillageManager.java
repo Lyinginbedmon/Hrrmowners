@@ -82,7 +82,7 @@ public class VillageManager
 		Village village = new Village(UUID.randomUUID(), dimension, biome);
 		Random rand = Random.create(pos.getX() * pos.getZ() * pos.getY());
 		BlockRotation rotation = BlockRotation.random(rand);
-		Optional<VillagePart> partOpt = Village.makeNewPart(position, rotation, world, PartType.CENTER, PartType.CENTER.getStructurePool(biome), Random.create(position.getX() * position.getZ() * position.getY()));
+		Optional<VillagePart> partOpt = Village.makeNewPart(position, rotation, world, PartType.CENTER.get(), PartType.CENTER.get().getStructurePool(biome), Random.create(position.getX() * position.getZ() * position.getY()));
 		if(partOpt.isEmpty())
 			return false;
 		
