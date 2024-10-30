@@ -12,6 +12,8 @@ public class HODataGeneratorsFabric implements DataGeneratorEntrypoint
 	public void onInitializeDataGenerator(FabricDataGenerator fabricDataGenerator)
 	{
 		FabricDataGenerator.Pack pack = fabricDataGenerator.createPack();
+		pack.addProvider(HOBlockLootTableProvider::new);
+		pack.addProvider(HOBlockTagProvider::new);
 	}
 	
 	public void buildRegistry(RegistryBuilder registryBuilder)

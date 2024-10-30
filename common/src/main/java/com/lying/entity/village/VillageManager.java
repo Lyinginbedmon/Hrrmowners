@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 
 import com.google.common.collect.Lists;
 import com.lying.Hrrmowners;
+import com.lying.init.HOVillagePartTypes;
 
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
@@ -82,7 +83,7 @@ public class VillageManager
 		Village village = new Village(UUID.randomUUID(), dimension, biome);
 		Random rand = Random.create(pos.getX() * pos.getZ() * pos.getY());
 		BlockRotation rotation = BlockRotation.random(rand);
-		Optional<VillagePart> partOpt = Village.makeNewPart(position, rotation, world, PartType.CENTER.get(), PartType.CENTER.get().getStructurePool(biome), Random.create(position.getX() * position.getZ() * position.getY()));
+		Optional<VillagePart> partOpt = Village.makeNewPart(position, rotation, world, HOVillagePartTypes.CENTER.get(), HOVillagePartTypes.CENTER.get().getStructurePool(biome), Random.create(position.getX() * position.getZ() * position.getY()));
 		if(partOpt.isEmpty())
 			return false;
 		

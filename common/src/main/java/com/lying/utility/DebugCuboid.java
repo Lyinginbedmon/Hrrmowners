@@ -4,7 +4,8 @@ import java.util.Objects;
 
 import org.jetbrains.annotations.Nullable;
 
-import com.lying.entity.village.PartType;
+import com.lying.entity.village.VillagePartType;
+import com.lying.init.HOVillagePartTypes;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
@@ -21,13 +22,13 @@ import net.minecraft.util.math.BlockPos;
 public record DebugCuboid(
 		BlockPos min, 
 		BlockPos max,
-		PartType type,
+		VillagePartType type,
 		String name)
 {
 	protected static final Codec<DebugCuboid> CODEC = RecordCodecBuilder.create(instance -> instance.group(
 			BlockPos.CODEC.fieldOf("Min").forGetter(v -> v.min()),
 			BlockPos.CODEC.fieldOf("Max").forGetter(v -> v.max()),
-			PartType.CODEC.fieldOf("Type").forGetter(v -> v.type()),
+			VillagePartType.CODEC.fieldOf("Type").forGetter(v -> v.type()),
 			Codec.STRING.fieldOf("Name").forGetter(v -> v.name()))
 				.apply(instance, DebugCuboid::new));
 	
@@ -59,7 +60,7 @@ public record DebugCuboid(
 			name = pool.getPoolElement().toString();
 		}
 		
-		PartType type = PartType.fromPartName(name);
+		VillagePartType type = HOVillagePartTypes.fromPartName(name);
 		if(type == null)
 			return null;
 		

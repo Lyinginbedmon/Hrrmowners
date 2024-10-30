@@ -196,7 +196,7 @@ public class VillageModel
 	
 	public Connector selectedConnector() { return connectors.get(0); }
 	
-	public int getTallyOf(PartType type) { return tally.getOrDefault(type.registryName(), 0); }
+	public int getTallyOf(VillagePartType type) { return tally.getOrDefault(type.registryName(), 0); }
 	
 	public boolean isEmpty() { return parts.isEmpty(); }
 	

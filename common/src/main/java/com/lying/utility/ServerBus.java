@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 
 import com.google.common.collect.Lists;
 import com.lying.Hrrmowners;
-import com.lying.entity.village.PartType;
+import com.lying.entity.village.VillagePartType;
 import com.lying.network.ShowCubesPacket;
 import com.lying.reference.Reference;
 
@@ -35,7 +35,7 @@ public class ServerBus
 			comps.removeIf(a -> a == null);
 			
 			LOGGER.info("Found {} structure pieces near {}", comps.size(), player.getChunkPos().toString());
-			Map<PartType, Integer> tallies = new HashMap<>();
+			Map<VillagePartType, Integer> tallies = new HashMap<>();
 			comps.forEach(comp -> tallies.put(comp.type(), tallies.getOrDefault(comp.type(), 0) + 1));
 			tallies.entrySet().forEach(entry -> LOGGER.info(" # {} - {}", entry.getKey().registryName().getPath(), entry.getValue()));
 			ShowCubesPacket.send(player, comps);

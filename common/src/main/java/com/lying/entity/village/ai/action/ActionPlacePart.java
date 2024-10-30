@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.lying.Hrrmowners;
-import com.lying.entity.village.PartType;
+import com.lying.entity.village.VillagePartType;
 import com.lying.entity.village.Village;
 import com.lying.entity.village.VillageModel;
 import com.lying.entity.village.VillagePart;
@@ -27,12 +27,12 @@ import net.minecraft.world.biome.Biome;
 
 public class ActionPlacePart extends Action
 {
-	private final PartType type;
+	private final VillagePartType type;
 	private final RegistryKey<Biome> style;
 	
 	private final RegistryKey<StructurePool> poolKey;
 	
-	public ActionPlacePart(PartType typeIn, RegistryKey<Biome> styleIn)
+	public ActionPlacePart(VillagePartType typeIn, RegistryKey<Biome> styleIn)
 	{
 		super(Identifier.of(Reference.ModInfo.MOD_ID, "place_"+typeIn.asString()), typeIn.costToBuild());
 		type = typeIn;
@@ -44,7 +44,7 @@ public class ActionPlacePart extends Action
 	
 	public boolean canTakeAction(VillageModel model)
 	{
-		return !model.cannotExpand();
+		return !model.cannotExpand() && model.openConnectors(c -> c.canLinkTo(type)) > 0;
 	}
 	
 	public boolean applyToModel(VillageModel model, ServerWorld world, boolean isSimulated)

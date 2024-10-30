@@ -4,6 +4,7 @@ import java.util.function.Supplier;
 
 import com.lying.Hrrmowners;
 import com.lying.block.FirmamentBlock;
+import com.lying.block.NestBlock;
 import com.lying.reference.Reference;
 
 import dev.architectury.registry.registries.DeferredRegister;
@@ -20,7 +21,8 @@ public class HOBlocks
 	public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(Reference.ModInfo.MOD_ID, RegistryKeys.BLOCK);
 	private static int tally = 0;
 	
-	public static final RegistrySupplier<Block> SAND_FIRMAMENT	= register("sand_firmament", () -> new FirmamentBlock(AbstractBlock.Settings.create().mapColor(MapColor.YELLOW).sounds(BlockSoundGroup.SAND).instrument(NoteBlockInstrument.BASS).strength(2.0f)));
+	public static final RegistrySupplier<Block> SAND_FIRMAMENT	= register("sand_firmament", () -> new FirmamentBlock(AbstractBlock.Settings.create().mapColor(MapColor.YELLOW).sounds(BlockSoundGroup.SAND).instrument(NoteBlockInstrument.BASS).strength(2.0f).requiresTool()));
+	public static final RegistrySupplier<Block> NEST			= register("surina_nest", () -> new NestBlock(AbstractBlock.Settings.create().mapColor(MapColor.YELLOW).sounds(BlockSoundGroup.FROGSPAWN).instrument(NoteBlockInstrument.HARP).strength(8F).dropsNothing().nonOpaque().luminance(state -> 8)));
 	
 	private static RegistrySupplier<Block> register(String nameIn, Supplier<Block> blockIn)
 	{

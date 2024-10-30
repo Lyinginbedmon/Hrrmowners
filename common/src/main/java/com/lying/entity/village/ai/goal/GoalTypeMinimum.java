@@ -3,22 +3,22 @@ package com.lying.entity.village.ai.goal;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import com.lying.entity.village.PartType;
+import com.lying.entity.village.VillagePartType;
 import com.lying.entity.village.VillageModel;
 
 import net.minecraft.util.math.MathHelper;
 
 public class GoalTypeMinimum implements Goal
 {
-	private final Supplier<PartType> type;
+	private final Supplier<VillagePartType> type;
 	private final Function<VillageModel, Integer> count;
 	
-	public GoalTypeMinimum(Supplier<PartType> typeIn, int countIn)
+	public GoalTypeMinimum(Supplier<VillagePartType> typeIn, int countIn)
 	{
 		this(typeIn, (model) -> Math.abs(countIn));
 	}
 	
-	public GoalTypeMinimum(Supplier<PartType> typeIn, Function<VillageModel, Integer> countIn)
+	public GoalTypeMinimum(Supplier<VillagePartType> typeIn, Function<VillageModel, Integer> countIn)
 	{
 		type = typeIn;
 		count = countIn;

@@ -31,6 +31,7 @@ public class HOItems
 	public static final RegistrySupplier<Item> SURINA_SPAWN_EGG	= register("surina_spawn_egg", () -> new SpawnEggItem(HOEntityTypes.SURINA.get(), 0xD8CFB0, 0xA19264, new Item.Settings().arch$tab(HRRMOWNERS_TAB)));
 	
 	public static final RegistrySupplier<Item> SAND_FIRMAMENT_BLOCK = register("sand_firmament", () -> new BlockItem(HOBlocks.SAND_FIRMAMENT.get(), new Item.Settings().arch$tab(HRRMOWNERS_TAB)));
+	public static final RegistrySupplier<Item> NEST_BLOCK = register("nest", () -> new BlockItem(HOBlocks.NEST.get(), new Item.Settings().arch$tab(HRRMOWNERS_TAB)));
 	
 	private static RegistrySupplier<Item> register(String nameIn, Supplier<Item> itemIn)
 	{

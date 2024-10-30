@@ -2,6 +2,7 @@ package com.lying.fabric.client;
 
 import com.lying.client.HrrmownersClient;
 import com.lying.client.init.HOModelLayerParts;
+import com.lying.client.renderer.entity.SeatEntityRenderer;
 import com.lying.client.renderer.entity.SurinaEntityRenderer;
 import com.lying.init.HOEntityTypes;
 
@@ -18,5 +19,6 @@ public final class HrrmownersFabricClient implements ClientModInitializer
     	HOModelLayerParts.init((layer, func) -> EntityModelLayerRegistry.register(layer, func));
     	
     	EntityRendererRegistry.register(HOEntityTypes.SURINA.get(), SurinaEntityRenderer::new);
+    	EntityRendererRegistry.register(HOEntityTypes.SEAT.get(), SeatEntityRenderer::new);
     }
 }

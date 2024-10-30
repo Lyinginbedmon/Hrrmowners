@@ -10,10 +10,12 @@ import org.slf4j.Logger;
 import com.google.common.collect.Lists;
 import com.lying.Hrrmowners;
 import com.lying.entity.village.ai.Connector;
+import com.lying.init.HOVillagePartTypes;
 import com.lying.network.HideCubesPacket;
 import com.lying.network.ShowCubesPacket;
 import com.lying.utility.DebugCuboid;
 
+import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.JigsawBlock;
 import net.minecraft.block.entity.JigsawBlockEntity;
@@ -45,16 +47,18 @@ public class VillagePart
 	
 	public final UUID id;
 	
-	public final PartType type;
+	public final VillagePartType type;
 	public final BlockRotation rotation;
 	private BlockBox bounds;
 	
 	/** Open connections remaining for this part */
 	private final List<Connector> connectors = Lists.newArrayList();
 	
+	private final List<BlockPos> tileEntities = Lists.newArrayList();
+	
 	private final PoolStructurePiece piece;
 	
-	public VillagePart(UUID idIn, PartType typeIn, PoolStructurePiece pieceIn, StructureTemplateManager templateManager)
+	public VillagePart(UUID idIn, VillagePartType typeIn, PoolStructurePiece pieceIn, StructureTemplateManager templateManager)
 	{
 		id = idIn;
 		type = typeIn;
@@ -62,7 +66,10 @@ public class VillagePart
 		rotation = piece.getRotation();
 		bounds = piece.getBoundingBox();
 		if(templateManager != null)
+		{
 			calculateConnectors(templateManager);
+			calculateTiles(templateManager);
+		}
 	}
 	
 	public UUID id() { return id; }
@@ -70,7 +77,7 @@ public class VillagePart
 	public NbtCompound writeToNbt(NbtCompound nbt, StructureContext context)
 	{
 		nbt.putUuid("ID", id);
-		PartType.CODEC.encodeStart(NbtOps.INSTANCE, type).resultOrPartial(LOGGER::error).ifPresent(type -> nbt.put("PartType", type));
+		VillagePartType.CODEC.encodeStart(NbtOps.INSTANCE, type).resultOrPartial(LOGGER::error).ifPresent(type -> nbt.put("PartType", type));
 		nbt.put("Piece", piece.toNbt(context));
 		if(!connectors.isEmpty())
 			nbt.put("Connectors", VillageModel.connectorsToNbt(connectors));
@@ -81,7 +88,7 @@ public class VillagePart
 	public static Optional<VillagePart> readFromNbt(NbtCompound nbt, ServerWorld world)
 	{
 		UUID id = nbt.getUuid("ID");
-		PartType type = PartType.CODEC.parse(NbtOps.INSTANCE, nbt.get("PartType")).getOrThrow();
+		VillagePartType type = VillagePartType.CODEC.parse(NbtOps.INSTANCE, nbt.get("PartType")).getOrThrow();
 		PoolStructurePiece piece = (PoolStructurePiece)pieceFromNbt(nbt.getCompound("Piece"), StructureContext.from(world));
 		if(piece == null)
 			return Optional.empty();
@@ -113,6 +120,17 @@ public class VillagePart
 		return null;
 	}
 	
+	public void calculateTiles(StructureTemplateManager templateManager)
+	{
+		tileEntities.clear();
+		StructurePoolElement element = piece.getPoolElement();
+		element.getStructureBlockInfos(templateManager, piece.getPos(), piece.getRotation(), random()).stream()
+			.filter(info -> info.state().getBlock() instanceof BlockEntityProvider)
+			.forEach(info -> tileEntities.add(info.pos()));
+	}
+	
+	public List<BlockPos> getTiles() { return tileEntities; }
+	
 	public void calculateConnectors(StructureTemplateManager templateManager)
 	{
 		connectors.clear();
@@ -126,7 +144,7 @@ public class VillagePart
 	{
 		return 
 				info.state().isOf(Blocks.JIGSAW) && 
-				PartType.byID(Identifier.of(info.nbt().getString(JigsawBlockEntity.TARGET_KEY))) != null && 
+				HOVillagePartTypes.byID(Identifier.of(info.nbt().getString(JigsawBlockEntity.TARGET_KEY))) != null && 
 				!bounds.contains(info.pos().offset(JigsawBlock.getFacing(info.state())));
 	}
 	
@@ -149,7 +167,7 @@ public class VillagePart
 			BlockPos pos = info.pos;
 			boolean bl = pos.getSquaredDistance(position) == 0D;
 			if(bl && shouldNotify)
-				Hrrmowners.forAllPlayers(player -> HideCubesPacket.send(player, new DebugCuboid(pos, pos, PartType.WORK.get(), info.name)));
+				Hrrmowners.forAllPlayers(player -> HideCubesPacket.send(player, new DebugCuboid(pos, pos, HOVillagePartTypes.WORK.get(), info.name)));
 			return bl;
 		});
 	}
@@ -191,6 +209,6 @@ public class VillagePart
 	public void collectDebugCuboids(List<DebugCuboid> collection)
 	{
 		collection.add(new DebugCuboid(min(), max(), type, ""));
-		connectors.forEach(info -> collection.add(new DebugCuboid(info.pos, info.pos, PartType.WORK.get(), info.name)));
+		connectors.forEach(info -> collection.add(new DebugCuboid(info.pos, info.pos, HOVillagePartTypes.WORK.get(), info.name)));
 	}
 }

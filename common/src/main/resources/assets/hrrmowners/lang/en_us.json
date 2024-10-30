@@ -5,8 +5,10 @@
 	"item.hrrmowners.surina_spawn_egg": "Spawn Surina",
 	// Blocks
 	"block.hrrmowners.sand_firmament": "Sandy Firmament",
+	"block.hrrmowners.surina_nest": "Surina Nest",
 	// Entities
-	"entity.hrrmowners.surina": "Surina"
+	"entity.hrrmowners.surina": "Surina",
+	"entity.hrrmowners.seat": "Seat"
 	// GUI
 	// Sounds
 }

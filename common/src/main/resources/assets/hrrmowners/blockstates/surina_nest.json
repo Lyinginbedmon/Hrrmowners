@@ -1,0 +1,8 @@
+{
+	"variants": {
+		"part=north_west": { "model": "hrrmowners:block/surina_nest" },
+		"part=north_east": { "model": "hrrmowners:block/surina_nest", "y": 90 },
+		"part=south_east": { "model": "hrrmowners:block/surina_nest", "y": 180 },
+		"part=south_west": { "model": "hrrmowners:block/surina_nest", "y": 270 }
+	}
+}

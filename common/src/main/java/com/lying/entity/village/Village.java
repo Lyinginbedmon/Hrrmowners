@@ -10,12 +10,15 @@ import org.slf4j.Logger;
 
 import com.google.common.collect.Lists;
 import com.lying.Hrrmowners;
+import com.lying.block.entity.NestBlockEntity;
 import com.lying.entity.SurinaEntity;
 import com.lying.entity.village.ai.Connector;
 import com.lying.entity.village.ai.HOA;
 import com.lying.entity.village.ai.action.ActionPlacePart;
 import com.lying.entity.village.ai.goal.GoalHaveConnectors;
 import com.lying.entity.village.ai.goal.GoalTypeMinimum;
+import com.lying.init.HOBlockEntityTypes;
+import com.lying.init.HOVillagePartTypes;
 import com.lying.reference.Reference;
 
 import net.minecraft.nbt.NbtCompound;
@@ -70,14 +73,14 @@ public class Village
 		
 		// Prepare HOA
 		hoa = new HOA(List.of(), List.of(
-				new GoalHaveConnectors(3, t -> t.canLinkTo(PartType.STREET.get())), 
-				new GoalHaveConnectors(1, t -> t.canLinkTo(PartType.HOUSE.get())),
-				new GoalTypeMinimum(PartType.STREET, 1),
-				new GoalTypeMinimum(PartType.HOUSE, VillageModel::population),
-				new GoalTypeMinimum(PartType.WORK, m -> m.residentsOfType(Resident.WORKER))
+				new GoalHaveConnectors(3, t -> t.canLinkTo(HOVillagePartTypes.STREET.get())), 
+				new GoalHaveConnectors(1, t -> t.canLinkTo(HOVillagePartTypes.HOUSE.get())),
+				new GoalTypeMinimum(HOVillagePartTypes.STREET, 1),
+				new GoalTypeMinimum(HOVillagePartTypes.HOUSE, VillageModel::population),
+				new GoalTypeMinimum(HOVillagePartTypes.WORK, m -> m.residentsOfType(Resident.WORKER))
 				));
 		
-		for(PartType type : PartType.values())
+		for(VillagePartType type : HOVillagePartTypes.values())
 			hoa.addAction(new ActionPlacePart(type, biome));
 	}
 	
@@ -100,11 +103,26 @@ public class Village
 	public void tryPlan(ServerWorld world)
 	{
 		hoa.tryGeneratePlan(model, this, world);
-		
 	}
 	
 	public void tick(ServerWorld world)
 	{
+		if(model.isEmpty())
+			return;
+		else
+		{
+			Optional<VillagePart> core = model.getCenter();
+			if(core.isEmpty())
+				return;
+			
+			VillagePart center = core.get();
+			Optional<BlockPos> throne = center.getTiles().stream()
+				.filter(p -> world.getBlockEntity(p) != null && world.getBlockEntity(p).getType() == HOBlockEntityTypes.NEST.get() && ((NestBlockEntity)world.getBlockEntity(p)).isOccupied()).findFirst();
+			
+			if(throne.isEmpty())
+				return;
+		}
+		
 		// Periodically evaluate goals and update plan if necessary
 		if(hoa.hasPlan())
 		{
@@ -113,7 +131,7 @@ public class Village
 		}
 		
 		// Update residential census
-		if(world.getTime()%(Reference.Values.VILLAGE_TICK_RATE * 2) == 0 && !model.isEmpty())
+		if(world.getTime()%(Reference.Values.VILLAGE_TICK_RATE * 2) == 0)
 		{
 			residents.clear();
 			residents.addAll(model.getEnclosedResidents(SurinaEntity.class, world, 3D));
@@ -157,11 +175,11 @@ public class Village
 	public boolean grow(ServerWorld world)
 	{
 		Random rand = world.getRandom();
-		PartType type = PartType.values().get(rand.nextInt(PartType.values().size()));
+		VillagePartType type = HOVillagePartTypes.values().get(rand.nextInt(HOVillagePartTypes.values().size()));
 		return tryAddOfType(world, type, rand);
 	}
 	
-	public boolean tryAddOfType(ServerWorld world, PartType type, Random rand)
+	public boolean tryAddOfType(ServerWorld world, VillagePartType type, Random rand)
 	{
 		if(model.isEmpty() || model.cannotExpand())
 		{
@@ -244,7 +262,7 @@ public class Village
 		model.parts().forEach(part -> part.placeInWorld(world));
 	}
 	
-	public static Optional<VillagePart> makeNewPart(final BlockPos position, final BlockRotation rotation, ServerWorld server, PartType type, RegistryKey<StructurePool> poolKey, Random rand)
+	public static Optional<VillagePart> makeNewPart(final BlockPos position, final BlockRotation rotation, ServerWorld server, VillagePartType type, RegistryKey<StructurePool> poolKey, Random rand)
 	{
 		DynamicRegistryManager registryManager = server.getRegistryManager();
 		Registry<StructurePool> registry = registryManager.get(RegistryKeys.TEMPLATE_POOL);
@@ -263,7 +281,7 @@ public class Village
 		return Optional.empty();
 	}
 	
-	public static Optional<VillagePart> makeNewPart(StructurePoolElement element, PartType type, BlockPos position, BlockRotation rotation, StructureTemplateManager manager)
+	public static Optional<VillagePart> makeNewPart(StructurePoolElement element, VillagePartType type, BlockPos position, BlockRotation rotation, StructureTemplateManager manager)
 	{
 		PoolStructurePiece poolStructurePiece = new PoolStructurePiece(
 				manager, 
