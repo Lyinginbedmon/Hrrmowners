@@ -57,6 +57,8 @@ public class Village
 	/** A set of VillagePart reflecting the layout of the village */
 	private final VillageModel model = new VillageModel();
 	
+	private Optional<BlockPos> throneCached = Optional.empty();
+	
 	private final HOA hoa;
 	
 	/** True if this village exists in the world yet */
@@ -109,6 +111,16 @@ public class Village
 	{
 		if(model.isEmpty())
 			return;
+		else if(throneCached.isPresent())
+		{
+			BlockPos pos = throneCached.get();
+			Optional<NestBlockEntity> throne = world.getBlockEntity(pos, HOBlockEntityTypes.NEST.get());
+			if(throne.isEmpty() || !throne.get().isOccupied())
+			{
+				throneCached = Optional.empty();
+				return;
+			}
+		}
 		else
 		{
 			Optional<VillagePart> core = model.getCenter();
@@ -116,11 +128,10 @@ public class Village
 				return;
 			
 			VillagePart center = core.get();
-			Optional<BlockPos> throne = center.getTiles().stream()
-				.filter(p -> world.getBlockEntity(p) != null && world.getBlockEntity(p).getType() == HOBlockEntityTypes.NEST.get() && ((NestBlockEntity)world.getBlockEntity(p)).isOccupied()).findFirst();
+			throneCached = center.getTilesOfType(world, HOBlockEntityTypes.NEST.get()).stream()
+				.filter(p -> ((NestBlockEntity)world.getBlockEntity(p)).isOccupied()).findFirst();
 			
-			if(throne.isEmpty())
-				return;
+			return;
 		}
 		
 		// Periodically evaluate goals and update plan if necessary

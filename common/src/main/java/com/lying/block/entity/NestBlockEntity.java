@@ -3,11 +3,12 @@ package com.lying.block.entity;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.jetbrains.annotations.Nullable;
+
 import com.lying.block.NestBlock;
 import com.lying.entity.SeatEntity;
 import com.lying.init.HOBlockEntityTypes;
 import com.lying.init.HOEntityTypes;
-import com.lying.reference.Reference;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -53,43 +54,68 @@ public class NestBlockEntity extends BlockEntity
 	
 	public static <T extends BlockEntity> void tickServer(World world, BlockPos pos, BlockState state, NestBlockEntity nest)
 	{
-		if(!nest.hasWorld() || world.getTime()%Reference.Values.TICKS_PER_SECOND > 0) return;
-		
-		if(nest.seatID.isEmpty())
-		{
-			SeatEntity seat = HOEntityTypes.SEAT.get().create(world);
-			seat.setPos(pos.getX() + 1, pos.getY() + 0.75D, pos.getZ() + 1);
-			seat.setAttachedBlock(nest.getPos());
-			world.spawnEntity(seat);
-			nest.setSeat(seat);
-		}
-		else
-		{
-			// Try to cache the seat entity
-			if(nest.seatEnt == null)
-				nest.seatEnt = world.getEntitiesByClass(SeatEntity.class, new Box(nest.getPos()).expand(6D), nest::isSeatEntity).stream().findFirst().orElse(null);
-			
-			// If the seat entity cannot be found or is no longer valid, reset
-			if(nest.seatEnt == null || !isUseableSeat(nest.seatEnt))
-				nest.clearSeat();
-		}
+		nest.tryFindSeat();
+		if(nest.seatID.isPresent() && (nest.seatEnt == null || !isUseableSeat(nest.seatEnt)))
+			nest.clearSeat();
 	}
 	
-	public boolean isOccupied() { return seatEnt != null && seatEnt.hasPassengers(); }
-	
-	public void setSeat(Entity seatIn)
+	private SeatEntity createNewSeat()
 	{
-		seatID = Optional.of(seatIn.getUuid());
+		BlockPos pos = getPos();
+		SeatEntity seat = HOEntityTypes.SEAT.get().create(getWorld());
+		seat.setPos(pos.getX() + 1, pos.getY() + 0.75D, pos.getZ() + 1);
+		seat.setAttachedBlock(getPos());
+		setSeat(seat);
+		return seat;
+	}
+	
+	public void setSeat(@Nullable Entity seatIn)
+	{
+		seatID = seatIn == null ? Optional.empty() : Optional.of(seatIn.getUuid());
 		seatEnt = seatIn;
 	}
 	
-	public void clearSeat()
+	public void clearSeat() { setSeat(null); }
+	
+	/** Returns true if this nest has someone sitting in it */
+	public boolean isOccupied()
 	{
-		seatID = Optional.empty();
-		seatEnt = null;
+		tryFindSeat();
+		return seatEnt != null && seatEnt.hasPassengers();
 	}
 	
-	public boolean isSeatEntity(Entity ent) { return ent != null && seatID.isPresent() && ent.getUuid().equals(seatID.get()) && isUseableSeat(ent); }
+	public boolean tryToSeat(Entity sitter)
+	{
+		if(isOccupied() || seatID.isPresent())
+			return false;
+		
+		if(!getWorld().isClient())
+		{
+			SeatEntity seat = createNewSeat();
+			getWorld().spawnEntity(seat);
+			sitter.startRiding(seat);
+		}
+		
+		return true;
+	}
 	
-	public static boolean isUseableSeat(Entity ent) { return ent.getType() == HOEntityTypes.SEAT.get() && ent.isAlive() && !ent.isRemoved(); }
+	public void tryFindSeat()
+	{
+		if(seatEnt != null || seatID.isEmpty())
+			return;
+		seatEnt = getWorld().getEntitiesByClass(Entity.class, (new Box(getPos())).expand(6D), this::isSeatEntity).stream().findFirst().orElse(null);
+	}
+	
+	public boolean isSeatEntity(Entity ent)
+	{
+		return ent != null && isUseableSeat(ent) && ent.getUuid().equals(seatID.orElse(null));
+	}
+	
+	public static boolean isUseableSeat(Entity ent)
+	{
+		return 
+				ent != null && 
+				ent.getType() == HOEntityTypes.SEAT.get() && 
+				ent.isAlive();
+	}
 }

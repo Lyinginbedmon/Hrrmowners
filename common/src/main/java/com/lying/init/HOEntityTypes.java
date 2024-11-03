@@ -23,16 +23,10 @@ public class HOEntityTypes
 	private static int tally = 0;
 	
 	public static final RegistrySupplier<EntityType<SurinaEntity>> SURINA	= register("surina", () -> 
-	{
-		EntityType.Builder<SurinaEntity> builder = EntityType.Builder.<SurinaEntity>create(SurinaEntity::new, SpawnGroup.MISC).dimensions(0.6f, 1.95f).eyeHeight(1.62f).maxTrackingRange(10);
-		return builder.build("surina");
-	});
+		EntityType.Builder.<SurinaEntity>create(SurinaEntity::new, SpawnGroup.MISC).dimensions(0.6f, 1.95f).eyeHeight(1.62f).maxTrackingRange(10).build("surina"));
 	
 	public static final RegistrySupplier<EntityType<SeatEntity>> SEAT	= register("seat", () -> 
-	{
-		EntityType.Builder<SeatEntity> builder = EntityType.Builder.<SeatEntity>create(SeatEntity::new, SpawnGroup.MISC).dimensions(0.8f, 0.8f).eyeHeight(0.4f);
-		return builder.build("seat");
-	});
+		EntityType.Builder.<SeatEntity>create(SeatEntity::new, SpawnGroup.MISC).dimensions(0.1f, 0.1f).maxTrackingRange(256).trackingTickInterval(20).build("seat"));
 	
 	private static <T extends Entity> RegistrySupplier<EntityType<T>> register(String name, Supplier<EntityType<T>> entry)
 	{

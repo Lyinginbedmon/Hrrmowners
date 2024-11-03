@@ -15,9 +15,10 @@ import com.lying.network.HideCubesPacket;
 import com.lying.network.ShowCubesPacket;
 import com.lying.utility.DebugCuboid;
 
-import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.JigsawBlock;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.entity.JigsawBlockEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
@@ -54,8 +55,6 @@ public class VillagePart
 	/** Open connections remaining for this part */
 	private final List<Connector> connectors = Lists.newArrayList();
 	
-	private final List<BlockPos> tileEntities = Lists.newArrayList();
-	
 	private final PoolStructurePiece piece;
 	
 	public VillagePart(UUID idIn, VillagePartType typeIn, PoolStructurePiece pieceIn, StructureTemplateManager templateManager)
@@ -66,10 +65,7 @@ public class VillagePart
 		rotation = piece.getRotation();
 		bounds = piece.getBoundingBox();
 		if(templateManager != null)
-		{
 			calculateConnectors(templateManager);
-			calculateTiles(templateManager);
-		}
 	}
 	
 	public UUID id() { return id; }
@@ -120,16 +116,33 @@ public class VillagePart
 		return null;
 	}
 	
-	public void calculateTiles(StructureTemplateManager templateManager)
+	public List<BlockPos> getAllTiles(ServerWorld world)
 	{
-		tileEntities.clear();
-		StructurePoolElement element = piece.getPoolElement();
-		element.getStructureBlockInfos(templateManager, piece.getPos(), piece.getRotation(), random()).stream()
-			.filter(info -> info.state().getBlock() instanceof BlockEntityProvider)
-			.forEach(info -> tileEntities.add(info.pos()));
+		List<BlockPos> tileEntities = Lists.newArrayList();
+		for(int y = bounds.getMinY(); y < bounds.getMaxY(); y++)
+			for(int x = bounds.getMinX(); x < bounds.getMaxX(); x++)
+				for(int z = bounds.getMinZ(); z < bounds.getMinZ(); z++)
+				{
+					BlockPos pos = new BlockPos(x, y, z);
+					BlockEntity tile = world.getBlockEntity(pos);
+					if(tile != null)
+						tileEntities.add(pos);
+				}
+		return tileEntities;
 	}
 	
-	public List<BlockPos> getTiles() { return tileEntities; }
+	public List<BlockPos> getTilesOfType(ServerWorld world, BlockEntityType<?> type)
+	{
+		List<BlockPos> tileEntities = Lists.newArrayList();
+		for(int y = bounds.getMinY(); y < bounds.getMaxY(); y++)
+			for(int x = bounds.getMinX(); x < bounds.getMaxX(); x++)
+				for(int z = bounds.getMinZ(); z < bounds.getMaxZ(); z++)
+				{
+					BlockPos pos = new BlockPos(x, y, z);
+					world.getBlockEntity(pos, type).ifPresent(t -> tileEntities.add(pos));
+				}
+		return tileEntities;
+	}
 	
 	public void calculateConnectors(StructureTemplateManager templateManager)
 	{
