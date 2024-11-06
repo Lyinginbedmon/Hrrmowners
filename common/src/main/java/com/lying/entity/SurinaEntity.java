@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableSet;
 import com.lying.Hrrmowners;
 import com.lying.entity.ai.SurinaTaskListProvider;
 import com.lying.init.HOItems;
+import com.lying.init.HOMemoryModuleTypes;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Dynamic;
 
@@ -71,7 +72,39 @@ public class SurinaEntity extends MerchantEntity implements VillagerDataContaine
 {
 	private static final Logger LOGGER = Hrrmowners.LOGGER;
 	private static final TrackedData<VillagerData> VILLAGER_DATA = DataTracker.registerData(SurinaEntity.class, TrackedDataHandlerRegistry.VILLAGER_DATA);
-	private static final ImmutableList<MemoryModuleType<?>> MEMORY_MODULES = ImmutableList.of(MemoryModuleType.HOME, MemoryModuleType.JOB_SITE, MemoryModuleType.POTENTIAL_JOB_SITE, MemoryModuleType.MEETING_POINT, MemoryModuleType.MOBS, MemoryModuleType.VISIBLE_MOBS, MemoryModuleType.VISIBLE_VILLAGER_BABIES, MemoryModuleType.NEAREST_PLAYERS, MemoryModuleType.NEAREST_VISIBLE_PLAYER, MemoryModuleType.NEAREST_VISIBLE_TARGETABLE_PLAYER, MemoryModuleType.NEAREST_VISIBLE_WANTED_ITEM, MemoryModuleType.ITEM_PICKUP_COOLDOWN_TICKS, new MemoryModuleType[]{MemoryModuleType.WALK_TARGET, MemoryModuleType.LOOK_TARGET, MemoryModuleType.INTERACTION_TARGET, MemoryModuleType.BREED_TARGET, MemoryModuleType.PATH, MemoryModuleType.DOORS_TO_CLOSE, MemoryModuleType.NEAREST_BED, MemoryModuleType.HURT_BY, MemoryModuleType.HURT_BY_ENTITY, MemoryModuleType.NEAREST_HOSTILE, MemoryModuleType.SECONDARY_JOB_SITE, MemoryModuleType.HIDING_PLACE, MemoryModuleType.HEARD_BELL_TIME, MemoryModuleType.CANT_REACH_WALK_TARGET_SINCE, MemoryModuleType.LAST_SLEPT, MemoryModuleType.LAST_WOKEN, MemoryModuleType.LAST_WORKED_AT_POI, MemoryModuleType.GOLEM_DETECTED_RECENTLY});
+	private static final ImmutableList<MemoryModuleType<?>> MEMORY_MODULES = ImmutableList.of(
+			MemoryModuleType.HOME, 
+			MemoryModuleType.JOB_SITE, 
+			MemoryModuleType.POTENTIAL_JOB_SITE, 
+			MemoryModuleType.MEETING_POINT, 
+			MemoryModuleType.MOBS, 
+			MemoryModuleType.VISIBLE_MOBS, 
+			MemoryModuleType.VISIBLE_VILLAGER_BABIES, 
+			MemoryModuleType.NEAREST_PLAYERS, 
+			MemoryModuleType.NEAREST_VISIBLE_PLAYER, 
+			MemoryModuleType.NEAREST_VISIBLE_TARGETABLE_PLAYER, 
+			MemoryModuleType.NEAREST_VISIBLE_WANTED_ITEM, 
+			MemoryModuleType.ITEM_PICKUP_COOLDOWN_TICKS, 
+			new MemoryModuleType[]{
+				MemoryModuleType.WALK_TARGET, 
+				MemoryModuleType.LOOK_TARGET, 
+				MemoryModuleType.INTERACTION_TARGET, 
+				MemoryModuleType.BREED_TARGET, 
+				MemoryModuleType.PATH, 
+				MemoryModuleType.DOORS_TO_CLOSE, 
+				MemoryModuleType.NEAREST_BED, 
+				MemoryModuleType.HURT_BY, 
+				MemoryModuleType.HURT_BY_ENTITY, 
+				MemoryModuleType.NEAREST_HOSTILE, 
+				MemoryModuleType.SECONDARY_JOB_SITE, 
+				MemoryModuleType.HIDING_PLACE, 
+				MemoryModuleType.HEARD_BELL_TIME, 
+				MemoryModuleType.CANT_REACH_WALK_TARGET_SINCE, 
+				MemoryModuleType.LAST_SLEPT, 
+				MemoryModuleType.LAST_WOKEN, 
+				MemoryModuleType.LAST_WORKED_AT_POI, 
+				MemoryModuleType.GOLEM_DETECTED_RECENTLY, 
+				HOMemoryModuleTypes.VILLAGE_TASK.get()});
 	private static final ImmutableList<SensorType<? extends Sensor<? super SurinaEntity>>> SENSORS = ImmutableList.of(SensorType.NEAREST_LIVING_ENTITIES, SensorType.NEAREST_PLAYERS, SensorType.NEAREST_ITEMS, SensorType.NEAREST_BED, SensorType.HURT_BY, SensorType.VILLAGER_HOSTILES, SensorType.VILLAGER_BABIES, SensorType.GOLEM_DETECTED);
 	public static final Map<MemoryModuleType<GlobalPos>, BiPredicate<SurinaEntity, RegistryEntry<PointOfInterestType>>> POINTS_OF_INTEREST = ImmutableMap.of(MemoryModuleType.HOME, (villager, arg2) -> arg2.matchesKey(PointOfInterestTypes.HOME), MemoryModuleType.JOB_SITE, (villager, arg2) -> villager.getVillagerData().getProfession().heldWorkstation().test((RegistryEntry<PointOfInterestType>)arg2), MemoryModuleType.POTENTIAL_JOB_SITE, (villager, arg2) -> VillagerProfession.IS_ACQUIRABLE_JOB_SITE.test((RegistryEntry<PointOfInterestType>)arg2), MemoryModuleType.MEETING_POINT, (villager, arg2) -> arg2.matchesKey(PointOfInterestTypes.MEETING));
 	private boolean natural;
@@ -132,6 +165,10 @@ public class SurinaEntity extends MerchantEntity implements VillagerDataContaine
 		brain.doExclusively(Activity.IDLE);
 		brain.refreshActivities(getWorld().getTimeOfDay(), getWorld().getTime());
 	}
+	
+	public void setHOATask(GlobalPos posIn) { this.getBrain().remember(HOMemoryModuleTypes.VILLAGE_TASK.get(), posIn); }
+	
+	public boolean hasHOATask() { return this.getBrain().getOptionalMemory(HOMemoryModuleTypes.VILLAGE_TASK.get()).isPresent(); }
 	
 	protected void onGrowUp()
 	{

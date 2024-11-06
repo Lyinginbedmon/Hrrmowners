@@ -77,9 +77,9 @@ public class Village
 		hoa = new HOA(List.of(), List.of(
 				new GoalHaveConnectors(3, t -> t.canLinkTo(HOVillagePartTypes.STREET.get())), 
 				new GoalHaveConnectors(1, t -> t.canLinkTo(HOVillagePartTypes.HOUSE.get())),
-				new GoalTypeMinimum(HOVillagePartTypes.STREET, 1),
-				new GoalTypeMinimum(HOVillagePartTypes.HOUSE, VillageModel::population),
-				new GoalTypeMinimum(HOVillagePartTypes.WORK, m -> m.residentsOfType(Resident.WORKER))
+				new GoalTypeMinimum(HOVillagePartTypes.STREET, 1)
+//				new GoalTypeMinimum(HOVillagePartTypes.HOUSE, VillageModel::population),
+//				new GoalTypeMinimum(HOVillagePartTypes.WORK, m -> m.residentsOfType(Resident.WORKER))
 				));
 		
 		for(VillagePartType type : HOVillagePartTypes.values())
@@ -111,28 +111,28 @@ public class Village
 	{
 		if(model.isEmpty())
 			return;
-		else if(throneCached.isPresent())
-		{
-			BlockPos pos = throneCached.get();
-			Optional<NestBlockEntity> throne = world.getBlockEntity(pos, HOBlockEntityTypes.NEST.get());
-			if(throne.isEmpty() || !throne.get().isOccupied())
-			{
-				throneCached = Optional.empty();
-				return;
-			}
-		}
-		else
-		{
-			Optional<VillagePart> core = model.getCenter();
-			if(core.isEmpty())
-				return;
-			
-			VillagePart center = core.get();
-			throneCached = center.getTilesOfType(world, HOBlockEntityTypes.NEST.get()).stream()
-				.filter(p -> ((NestBlockEntity)world.getBlockEntity(p)).isOccupied()).findFirst();
-			
-			return;
-		}
+//		else if(throneCached.isPresent())
+//		{
+//			BlockPos pos = throneCached.get();
+//			Optional<NestBlockEntity> throne = world.getBlockEntity(pos, HOBlockEntityTypes.NEST.get());
+//			if(throne.isEmpty() || !throne.get().isOccupied())
+//			{
+//				throneCached = Optional.empty();
+//				return;
+//			}
+//		}
+//		else
+//		{
+//			Optional<VillagePart> core = model.getCenter();
+//			if(core.isEmpty())
+//				return;
+//			
+//			VillagePart center = core.get();
+//			throneCached = center.getTilesOfType(world, HOBlockEntityTypes.NEST.get()).stream()
+//				.filter(p -> ((NestBlockEntity)world.getBlockEntity(p)).isOccupied()).findFirst();
+//			
+//			return;
+//		}
 		
 		// Periodically evaluate goals and update plan if necessary
 		if(hoa.hasPlan())
@@ -173,6 +173,11 @@ public class Village
 	public int getPopulation(@Nullable Resident type)
 	{
 		return type == null ? residents.size() : (int)residents.stream().filter(type::test).count();
+	}
+	
+	public List<SurinaEntity> getResidentsMatching(Predicate<SurinaEntity> predicate)
+	{
+		return residents.stream().filter(predicate).toList();
 	}
 	
 	public void erase(ServerWorld world)

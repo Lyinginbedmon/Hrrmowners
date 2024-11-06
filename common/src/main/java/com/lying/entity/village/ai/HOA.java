@@ -42,6 +42,7 @@ public class HOA
 	};
 	
 	private List<Action> currentPlan = Lists.newArrayList();
+	private Action currentAction = null;
 	
 	public HOA()
 	{
@@ -65,27 +66,51 @@ public class HOA
 		goals.add(goalIn);
 	}
 	
-	public boolean hasPlan() { return !currentPlan.isEmpty(); }
+	public boolean hasPlan() { return !currentPlan.isEmpty() || currentAction != null; }
 	
 	public void setPlan(Plan planIn)
 	{
-		currentPlan.clear();
+		clearPlan();
 		currentPlan.addAll(planIn.actions());
+	}
+	
+	public void clearPlan()
+	{
+		currentAction = null;
+		currentPlan.clear();
 	}
 	
 	public void tickPlan(ServerWorld world, Village village)
 	{
-		if(currentPlan.isEmpty())
+		if(!hasPlan())
 			return;
 		
-		Action nextStep = currentPlan.get(0);
-		if(nextStep.canTakeAction(village.model()))
+		if(currentAction == null)
 		{
-			currentPlan.get(0).applyToModel(village.model(), world, false);
-			currentPlan.remove(0);
+			currentAction = currentPlan.remove(0);
+			
+			// Before trying to execute new action, ensure it is useable
+			if(!currentAction.canTakeAction(village.model()))
+			{
+				LOGGER.info("## HOA plan invalidated with action {} at {} ##", currentAction.registryName().toString(), village.model().getCenter().get().pivot().toShortString());
+				clearPlan();
+				return;
+			}
 		}
-		else
-			currentPlan.clear();
+		
+		switch(currentAction.enactAction(village.model(), village, world))
+		{
+			case FAILURE:
+				LOGGER.info("## HOA plan invalidated with action {} at {} ##", currentAction.registryName().toString(), village.model().getCenter().get().pivot().toShortString());
+				clearPlan();
+				break;
+			case SUCCESS:
+				currentAction = null;
+				break;
+			case RUNNING:
+			default:
+				break;
+		}
 	}
 	
 	/** Returns true if the given model evaluates to 100% goal satisfaction */
@@ -174,7 +199,7 @@ public class HOA
 			{
 				action.setSeed(world.random.nextLong());
 				VillageModel planModel = presentState.copy(world);
-				if(!action.applyToModel(planModel, world, true))
+				if(!action.consider(planModel, world))
 					continue;
 				
 				Plan planAfter = plan.plan().copy().add(action.copy());

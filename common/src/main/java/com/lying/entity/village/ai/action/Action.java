@@ -1,9 +1,11 @@
 package com.lying.entity.village.ai.action;
 
+import com.lying.entity.village.Village;
 import com.lying.entity.village.VillageModel;
 
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.random.Random;
 
 public abstract class Action
@@ -13,6 +15,8 @@ public abstract class Action
 	
 	protected long seed = 418959963L;
 	protected Random rand;
+	
+	protected Result lastResult = Result.SUCCESS;
 	
 	protected Action(Identifier nameIn, float costIn)
 	{
@@ -36,8 +40,44 @@ public abstract class Action
 	/** Returns whether or not this action is available to the given model */
 	public abstract boolean canTakeAction(VillageModel model);
 	
-	/** Applies this action to the given model, returning true if successful */
-	public abstract boolean applyToModel(VillageModel model, ServerWorld world, boolean isSimulated);
+	/** Applies this action to the given model during planning, returning true if successful */
+	public abstract boolean consider(VillageModel model, ServerWorld world);
 	
-	public abstract Action copy();
+	/** Applies this action to the given model during execution */
+	public final Result enactAction(VillageModel model, Village village, ServerWorld world)
+	{
+		return (this.lastResult = enact(model, village, world));
+	}
+	
+	protected abstract Result enact(VillageModel model, Village village, ServerWorld world);
+	
+	public final Action copy()
+	{
+		Action clone = makeCopy();
+		clone.setSeed(seed);
+		clone.lastResult = Result.SUCCESS;
+		return clone;
+	}
+	
+	protected abstract Action makeCopy();
+	
+	public boolean isRunning() { return this.lastResult == Result.RUNNING; }
+	
+	public static enum Result implements StringIdentifiable
+	{
+		SUCCESS(true),
+		RUNNING(false),
+		FAILURE(true);
+		
+		private final boolean isEnd;
+		
+		private Result(boolean end)
+		{
+			isEnd = end;
+		}
+		
+		public boolean isEndState() { return isEnd; }
+		
+		public String asString() { return name().toLowerCase(); }
+	}
 }

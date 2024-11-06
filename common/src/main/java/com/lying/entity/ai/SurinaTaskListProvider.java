@@ -7,7 +7,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.lying.entity.SurinaEntity;
+import com.lying.entity.ai.brain.task.ConstructVillagePartTask;
 import com.lying.init.HOEntityTypes;
+import com.lying.init.HOMemoryModuleTypes;
 import com.mojang.datafixers.util.Pair;
 
 import net.minecraft.entity.EntityType;
@@ -88,6 +90,7 @@ public class SurinaTaskListProvider
 		tasks.add(Pair.of(0, StartRaidTask.create()));
 		tasks.add(Pair.of(0, ForgetCompletedPointOfInterestTask.create(profession.heldWorkstation(), MemoryModuleType.JOB_SITE)));
 		tasks.add(Pair.of(0, ForgetCompletedPointOfInterestTask.create(profession.acquirableWorkstation(), MemoryModuleType.POTENTIAL_JOB_SITE)));
+		tasks.add(Pair.of(0, new ConstructVillagePartTask(HOMemoryModuleTypes.VILLAGE_TASK.get(), 0.4F, 16)));
 		tasks.add(Pair.of(1, new WanderAroundTask()));
 		
 		tasks.add(Pair.of(5, WalkToNearestVisibleWantedItemTask.create(speed, false, 4)));
