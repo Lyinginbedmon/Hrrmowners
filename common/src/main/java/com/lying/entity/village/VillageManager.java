@@ -113,6 +113,15 @@ public class VillageManager
 		return villages.stream().filter(v -> v.contains(position)).findFirst();
 	}
 	
+	public Optional<Village> getVillage(UUID id)
+	{
+		for(List<Village> villages : villageMap.values())
+			for(Village village : villages)
+				if(village.id().equals(id))
+					return Optional.of(village);
+		return Optional.empty();
+	}
+	
 	public boolean kill(ServerWorld server, UUID id)
 	{
 		RegistryKey<World> dim = server.getRegistryKey();

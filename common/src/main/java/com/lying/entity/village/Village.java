@@ -10,14 +10,13 @@ import org.slf4j.Logger;
 
 import com.google.common.collect.Lists;
 import com.lying.Hrrmowners;
-import com.lying.block.entity.NestBlockEntity;
 import com.lying.entity.SurinaEntity;
 import com.lying.entity.village.ai.Connector;
 import com.lying.entity.village.ai.HOA;
+import com.lying.entity.village.ai.action.Action;
 import com.lying.entity.village.ai.action.ActionPlacePart;
 import com.lying.entity.village.ai.goal.GoalHaveConnectors;
 import com.lying.entity.village.ai.goal.GoalTypeMinimum;
-import com.lying.init.HOBlockEntityTypes;
 import com.lying.init.HOVillagePartTypes;
 import com.lying.reference.Reference;
 
@@ -77,8 +76,8 @@ public class Village
 		hoa = new HOA(List.of(), List.of(
 				new GoalHaveConnectors(3, t -> t.canLinkTo(HOVillagePartTypes.STREET.get())), 
 				new GoalHaveConnectors(1, t -> t.canLinkTo(HOVillagePartTypes.HOUSE.get())),
-				new GoalTypeMinimum(HOVillagePartTypes.STREET, 1)
-//				new GoalTypeMinimum(HOVillagePartTypes.HOUSE, VillageModel::population),
+				new GoalTypeMinimum(HOVillagePartTypes.STREET, 1),
+				new GoalTypeMinimum(HOVillagePartTypes.HOUSE, VillageModel::population)
 //				new GoalTypeMinimum(HOVillagePartTypes.WORK, m -> m.residentsOfType(Resident.WORKER))
 				));
 		
@@ -113,6 +112,7 @@ public class Village
 			return;
 //		else if(throneCached.isPresent())
 //		{
+//			// Ensure the last-identified active throne is still active
 //			BlockPos pos = throneCached.get();
 //			Optional<NestBlockEntity> throne = world.getBlockEntity(pos, HOBlockEntityTypes.NEST.get());
 //			if(throne.isEmpty() || !throne.get().isOccupied())
@@ -127,6 +127,7 @@ public class Village
 //			if(core.isEmpty())
 //				return;
 //			
+//			// Try to find an active throne
 //			VillagePart center = core.get();
 //			throneCached = center.getTilesOfType(world, HOBlockEntityTypes.NEST.get()).stream()
 //				.filter(p -> ((NestBlockEntity)world.getBlockEntity(p)).isOccupied()).findFirst();
@@ -134,21 +135,23 @@ public class Village
 //			return;
 //		}
 		
-		// Periodically evaluate goals and update plan if necessary
-		if(hoa.hasPlan())
-		{
-			hoa.tickPlan(world, this);
-			return;
-		}
-		
 		// Update residential census
 		if(world.getTime()%(Reference.Values.VILLAGE_TICK_RATE * 2) == 0)
 		{
-			residents.clear();
-			residents.addAll(model.getEnclosedResidents(SurinaEntity.class, world, 3D));
-			if(!residents.isEmpty())
-				LOGGER.info("# Updated village census: {}", residents.size());
+			residents.removeIf(r -> r == null || !r.isAlive() || r.isRemoved());
+			model.getEnclosedResidents(SurinaEntity.class, world, 3D).forEach(r -> 
+			{
+				if(!r.hasVillage() || r.villageID().equals(id) && !residents.contains(r))
+				{
+					r.setVillage(id);
+					residents.add(r);
+				}
+			});
 		}
+		
+		// Periodically evaluate goals and update plan if necessary
+		if(hoa.hasPlan())
+			hoa.tickPlan(world, this);
 	}
 	
 	public NbtCompound writeToNbt(NbtCompound nbt, ServerWorld world)
@@ -182,6 +185,7 @@ public class Village
 	
 	public void erase(ServerWorld world)
 	{
+		residents.forEach(r -> r.setVillage(null));
 		model.eraseAll(world, dimension);
 	}
 	
@@ -276,6 +280,16 @@ public class Village
 	public void generateAll(ServerWorld world)
 	{
 		model.parts().forEach(part -> part.placeInWorld(world));
+	}
+	
+	public boolean acceptPing(BlockPos position, SurinaEntity resident)
+	{
+		if(hoa.hasPlan())
+		{
+			Optional<Action> current = hoa.currentAction();
+			return current.isPresent() ? current.get().acceptPing(position, resident, model) : false;
+		}
+		return false;
 	}
 	
 	public static Optional<VillagePart> makeNewPart(final BlockPos position, final BlockRotation rotation, ServerWorld server, VillagePartType type, RegistryKey<StructurePool> poolKey, Random rand)

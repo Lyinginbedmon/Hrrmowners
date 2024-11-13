@@ -113,6 +113,8 @@ public class HOA
 		}
 	}
 	
+	public Optional<Action> currentAction() { return this.currentAction == null ? Optional.empty() : Optional.of(this.currentAction); }
+	
 	/** Returns true if the given model evaluates to 100% goal satisfaction */
 	public boolean meetsObjectives(VillageModel model)
 	{

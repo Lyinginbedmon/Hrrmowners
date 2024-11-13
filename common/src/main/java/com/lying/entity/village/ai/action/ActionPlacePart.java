@@ -12,7 +12,6 @@ import com.lying.entity.village.VillagePartType;
 import com.lying.entity.village.ai.Connector;
 import com.lying.reference.Reference;
 
-import net.minecraft.entity.Entity;
 import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
@@ -25,7 +24,6 @@ import net.minecraft.structure.pool.alias.StructurePoolAliasLookup;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.world.biome.Biome;
 
@@ -37,6 +35,7 @@ public class ActionPlacePart extends Action
 	private final RegistryKey<StructurePool> poolKey;
 	
 	private Optional<VillagePart> partToAdd = Optional.empty();
+	private Phase phase = Phase.REQUEST;
 	
 	public ActionPlacePart(VillagePartType typeIn, RegistryKey<Biome> styleIn)
 	{
@@ -71,31 +70,43 @@ public class ActionPlacePart extends Action
 			return Result.FAILURE;
 		
 		BlockPos connector = model.selectedConnector().pos;
-		if(!isRunning())
+		GlobalPos dest = new GlobalPos(world.getRegistryKey(), connector);
+		switch(phase)
 		{
-			// Issue command to available Surina
-			GlobalPos dest = new GlobalPos(world.getRegistryKey(), connector);
-			for(SurinaEntity resident : village.getResidentsMatching(s -> !s.hasHOATask()))
-			{
-				resident.setHOATask(dest);
-				break;
-			}
-			
-			return Result.RUNNING;
-		}
-		// Check for valid Surina near work site
-		else
-		{
-			Box bounds = new Box(connector).expand(2D);
-			if(world.getEntitiesByClass(SurinaEntity.class, bounds, Entity::isAlive).isEmpty())
-			{
+			case REQUEST:
+				// Find an available resident to supervise construction
+				village.getResidentsMatching(s -> !s.hasHOATask() && s.canPerformHOATask()).stream().findFirst().ifPresent(r -> 
+				{
+					r.setHOATask(dest);
+					phase = Phase.WAIT;
+				});
 				return Result.RUNNING;
-			}
-			
-			model.addPart(partToAdd.get(), world, true);
-			partToAdd.get().placeInWorld(world);
-			return Result.SUCCESS;
+			case WAIT:
+				/**
+				 * If there are no residents acting on this task, return to requesting phase
+				 */
+				if(village.getResidentsMatching(s -> s.getHOATask() != dest).isEmpty())
+					phase = Phase.REQUEST;
+				
+				return Result.RUNNING;
+			case PINGED:
+				return Result.SUCCESS;
+			default:
+				phase = Phase.REQUEST;
+				return Result.RUNNING;
 		}
+	}
+	
+	public boolean acceptPing(BlockPos target, SurinaEntity resident, VillageModel model)
+	{
+		if(target.getSquaredDistance(model.selectedConnector().pos) > 1 || phase != Phase.WAIT || !resident.hasFinishedHOATask())
+			return false;
+		
+		resident.markHOATaskCompleted();
+		model.addPart(partToAdd.get(), (ServerWorld)resident.getWorld(), true);
+		partToAdd.get().placeInWorld((ServerWorld)resident.getWorld());
+		phase = Phase.PINGED;
+		return true;
 	}
 	
 	private Optional<VillagePart> getSuitablePart(VillageModel model, ServerWorld world)
@@ -140,5 +151,12 @@ public class ActionPlacePart extends Action
 		}
 		
 		return Optional.empty();
+	}
+	
+	private static enum Phase
+	{
+		REQUEST,
+		WAIT,
+		PINGED;
 	}
 }

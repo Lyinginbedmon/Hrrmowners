@@ -1,11 +1,13 @@
 package com.lying.entity.village.ai.action;
 
+import com.lying.entity.SurinaEntity;
 import com.lying.entity.village.Village;
 import com.lying.entity.village.VillageModel;
 
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.StringIdentifiable;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.random.Random;
 
 public abstract class Action
@@ -50,6 +52,9 @@ public abstract class Action
 	}
 	
 	protected abstract Result enact(VillageModel model, Village village, ServerWorld world);
+	
+	/** Changes caused by pings from residents */
+	public boolean acceptPing(BlockPos target, SurinaEntity resident, VillageModel model) { return false; }
 	
 	public final Action copy()
 	{

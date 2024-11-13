@@ -2,12 +2,12 @@ package com.lying.entity.ai.brain.task;
 
 import java.util.Optional;
 
-import org.slf4j.Logger;
-
 import com.google.common.collect.ImmutableMap;
-import com.lying.Hrrmowners;
-import com.lying.init.HOMemoryModuleTypes;
+import com.lying.entity.SurinaEntity;
+import com.lying.entity.SurinaEntity.SurinaAnimation;
+import com.lying.reference.Reference;
 
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.ai.brain.Brain;
 import net.minecraft.entity.ai.brain.MemoryModuleState;
 import net.minecraft.entity.ai.brain.MemoryModuleType;
@@ -15,62 +15,72 @@ import net.minecraft.entity.ai.brain.WalkTarget;
 import net.minecraft.entity.ai.brain.task.MultiTickTask;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
 import net.minecraft.entity.ai.pathing.Path;
-import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.GlobalPos;
 
-public class ConstructVillagePartTask extends MultiTickTask<PathAwareEntity>
+public class ConstructVillagePartTask extends MultiTickTask<SurinaEntity>
 {
-	private static final Logger LOGGER = Hrrmowners.LOGGER;
-	private final MemoryModuleType<GlobalPos> module;
+	/** Duration of the build_start animation */
+	private static final int START_TIME = (int)(Reference.Values.TICKS_PER_SECOND * 0.5417F);
+	/* Duration of the build_end animation */
+	private static final int END_TIME = (int)(Reference.Values.TICKS_PER_SECOND * 0.5417F);
+	/* Total time to complete construction */
+	private static final int TOTAL_TIME = Reference.Values.TICKS_PER_SECOND * 5;
+	
+	private final MemoryModuleType<GlobalPos> modulePos;
+	private final MemoryModuleType<Boolean> moduleDone;
 	private final float speed;
 	private final int maxDistance;
 	
 	private BlockPos target;
-	private State status = null;
+	private State currentState = null;
 	private int ticksInState = 0;
 	
-	public ConstructVillagePartTask(MemoryModuleType<GlobalPos> posModule, float walkSpeed, int maxDist)
+	public ConstructVillagePartTask(MemoryModuleType<GlobalPos> posModule, MemoryModuleType<Boolean> doneModule, float walkSpeed, int maxDist)
 	{
 		super(ImmutableMap.of(
 				MemoryModuleType.CANT_REACH_WALK_TARGET_SINCE, MemoryModuleState.REGISTERED,
 				MemoryModuleType.PATH, MemoryModuleState.VALUE_ABSENT,
-				MemoryModuleType.WALK_TARGET, MemoryModuleState.VALUE_PRESENT), 150, 250);
-		module = posModule;
+				MemoryModuleType.WALK_TARGET, MemoryModuleState.VALUE_PRESENT), Reference.Values.TICKS_PER_SECOND * 5, 9999);
+		modulePos = posModule;
+		moduleDone = doneModule;
 		speed = walkSpeed;
 		maxDistance = maxDist;
 	}
 	
-	protected boolean shouldRun(ServerWorld world, PathAwareEntity entity)
+	protected boolean shouldRun(ServerWorld world, SurinaEntity entity)
 	{
 		Brain<?> brain = entity.getBrain();
-		Optional<GlobalPos> dest = brain.getOptionalMemory(module);
+		if(brain.getOptionalMemory(moduleDone).orElse(false))
+			return false;
+		
+		Optional<GlobalPos> dest = brain.getOptionalMemory(modulePos);
 		if(dest.isEmpty() || world.getRegistryKey() != dest.get().dimension() || !dest.get().pos().isWithinDistance(entity.getPos(), (double)maxDistance))
 			return false;
 		target = dest.get().pos();
 		return true;
 	}
 	
-	protected boolean shouldKeepRunning(ServerWorld world, PathAwareEntity entity, long l)
+	protected boolean shouldKeepRunning(ServerWorld world, SurinaEntity entity, long l)
 	{
-		return status != null;
+		return currentState != null;
 	}
 	
-	protected void run(ServerWorld world, PathAwareEntity entity, long time)
+	protected void run(ServerWorld world, SurinaEntity entity, long time)
 	{
 		// Identify current state
 		double dist = Math.sqrt(entity.getBlockPos().getSquaredDistance(target));
-		setStatus(dist <= 1D ? State.BUILDING : State.MOVING);
+		setState(dist <= 1D ? State.BUILDING : State.MOVING);
 	}
 	
-	protected void keepRunning(ServerWorld world, PathAwareEntity entity, long time)
+	protected void keepRunning(ServerWorld world, SurinaEntity entity, long time)
 	{
 		Brain<?> brain = entity.getBrain();
 		EntityNavigation navigator = entity.getNavigation();
 		++ticksInState;
-		switch(status)
+		switch(currentState)
 		{
 			case MOVING:
 				if(ticksInState == 1)
@@ -83,7 +93,6 @@ public class ConstructVillagePartTask extends MultiTickTask<PathAwareEntity>
 					brain.remember(MemoryModuleType.WALK_TARGET, new WalkTarget(target, speed, 1));
 					
 					navigator.startMovingAlong(path, speed);
-					LOGGER.info("Moving to target position {}", target.toShortString());
 					return;
 				}
 				
@@ -93,43 +102,54 @@ public class ConstructVillagePartTask extends MultiTickTask<PathAwareEntity>
 				else if(dist > 1D)
 					stop();
 				else
-					setStatus(State.BUILDING);
+					setState(State.BUILDING);
 				break;
 			case BUILDING:
 				navigator.stop();
-				if(ticksInState == 1)
-					;	// Start building animation
-				else if(ticksInState <= 60)
+				if(ticksInState < START_TIME)
+					entity.startAnimation(SurinaAnimation.BUILD_START);
+				else if(ticksInState < (TOTAL_TIME - END_TIME))
 				{
-					world.getPlayers().forEach(p -> world.spawnParticles(p, ParticleTypes.CRIT, true, entity.getX(), entity.getY(), entity.getZ(), 1, 0, 1, 0, 0.4));
+					entity.startAnimation(SurinaAnimation.BUILD_MAIN);
+					
+					// FIXME Replace crit particles with block dust particles
+					BlockState state = world.getBlockState(target);
+					for(int i=0; i<15; i++)
+						world.getPlayers().forEach(p -> world.spawnParticles(p, ParticleTypes.CRIT, true, entity.getX(), entity.getY(), entity.getZ(), 1, 0, 1, 0, 0.4));
 				}
 				else
-					setStatus(State.COMPLETE);
+				{
+					entity.startAnimation(SurinaAnimation.BUILD_END);
+					
+					brain.remember(moduleDone, true);
+					if(!entity.pingVillage(target))
+						entity.markHOATaskCompleted();
+					setState(State.COMPLETE);
+				}
 				break;
 			case COMPLETE:
-				stop();
+				navigator.stop();
+				if(!entity.hasHOATask() && ticksInState >= END_TIME)
+					stop();
 				break;
 		}
 	}
 	
-	protected void finishRunning(ServerWorld world, PathAwareEntity entity, long time)
+	protected void finishRunning(ServerWorld world, SurinaEntity entity, long time)
 	{
-		status = null;
-		entity.getBrain().forget(HOMemoryModuleTypes.VILLAGE_TASK.get());
-		LOGGER.info("Construction task finished running");
+		entity.startAnimation(SurinaAnimation.IDLE);
+		stop();
 	}
 	
-	private void setStatus(State state)
+	private void setState(State state)
 	{
 		ticksInState = 0;
-		status = state;
-		LOGGER.info("State updated to {}", status.name());
+		currentState = state;
 	}
 	
 	private void stop()
 	{
-		status = null;
-		LOGGER.error("Construction task stopped");
+		currentState = null;
 	}
 	
 	private static enum State

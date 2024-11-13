@@ -15,6 +15,7 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.ai.pathing.NavigationType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
@@ -136,6 +137,8 @@ public class NestBlock extends Block implements BlockEntityProvider
 		
 		return ActionResult.PASS;
 	}
+	
+	protected boolean canPathfindThrough(BlockState state, NavigationType type) { return false; }
 	
 	protected BlockState rotate(BlockState state, BlockRotation rotate)
 	{

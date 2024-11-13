@@ -1,6 +1,8 @@
 package com.lying.client.model;
 
+import com.lying.client.renderer.SurinaAnimations;
 import com.lying.entity.SurinaEntity;
+import com.lying.entity.SurinaEntity.SurinaAnimation;
 
 import net.minecraft.client.model.Dilation;
 import net.minecraft.client.model.ModelData;
@@ -123,7 +125,18 @@ public class SurinaEntityModel<T extends SurinaEntity> extends SinglePartEntityM
 	public void setAngles(T entity, float limbSwing, float limbSwingAmount, float ageInTicks, float headYaw, float headPitch)
 	{
 		getPart().traverse().forEach(part -> part.resetTransform());
-		
+		if(entity.isPlayingAnimation(SurinaAnimation.IDLE) || !entity.isPlayingAnimation())
+			doIdleAnimation(entity, limbSwing, limbSwingAmount, ageInTicks, headYaw, headPitch);
+		else
+		{
+			this.updateAnimation(entity.getAnimation(SurinaAnimation.BUILD_START), SurinaAnimations.build_start, entity.age);
+			this.updateAnimation(entity.getAnimation(SurinaAnimation.BUILD_MAIN), SurinaAnimations.build_main, entity.age);
+			this.updateAnimation(entity.getAnimation(SurinaAnimation.BUILD_END), SurinaAnimations.build_end, entity.age);
+		}
+	}
+	
+	private void doIdleAnimation(T entity, float limbSwing, float limbSwingAmount, float ageInTicks, float headYaw, float headPitch)
+	{
 		boolean isFlying = entity.getFallFlyingTicks() > 4;
 		boolean isSwimming = entity.isInSwimmingPose();
 		this.head.yaw = headYaw * ((float)Math.PI / 180);
