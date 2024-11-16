@@ -23,7 +23,6 @@ import net.minecraft.entity.ai.brain.task.ForgetBellRingTask;
 import net.minecraft.entity.ai.brain.task.ForgetCompletedPointOfInterestTask;
 import net.minecraft.entity.ai.brain.task.GoToIfNearbyTask;
 import net.minecraft.entity.ai.brain.task.GoToNearbyPositionTask;
-import net.minecraft.entity.ai.brain.task.GoToPointOfInterestTask;
 import net.minecraft.entity.ai.brain.task.GoToRememberedPositionTask;
 import net.minecraft.entity.ai.brain.task.GoTowardsLookTargetTask;
 import net.minecraft.entity.ai.brain.task.HideInHomeTask;
@@ -191,7 +190,7 @@ public class SurinaTaskListProvider
 				Pair.of(5, new RandomTask(ImmutableMap.of(MemoryModuleType.HOME, MemoryModuleState.VALUE_ABSENT), ImmutableList.of(
 					Pair.of(WalkHomeTask.create(speed), 1), 
 					Pair.of(WanderIndoorsTask.create(speed), 4), 
-					Pair.of(GoToPointOfInterestTask.create(speed, 4), 2), 
+					Pair.of(SurinaBrainTasks.createGoToPointOfInterestTask(speed, 4), 2), 
 					Pair.of(new WaitTask(20, 40), 2)))), 
 				SurinaBrainTasks.createBusyFollowTask(), 
 				Pair.of(99, ScheduleActivityTask.create()));

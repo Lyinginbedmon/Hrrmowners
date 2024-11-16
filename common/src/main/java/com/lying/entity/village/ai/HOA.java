@@ -92,8 +92,7 @@ public class HOA
 			// Before trying to execute new action, ensure it is useable
 			if(!currentAction.canTakeAction(village.model()))
 			{
-				LOGGER.info("## HOA plan invalidated with action {} at {} ##", currentAction.registryName().toString(), village.model().getCenter().get().pivot().toShortString());
-				clearPlan();
+				invalidate(village);
 				return;
 			}
 		}
@@ -101,8 +100,7 @@ public class HOA
 		switch(currentAction.enactAction(village.model(), village, world))
 		{
 			case FAILURE:
-				LOGGER.info("## HOA plan invalidated with action {} at {} ##", currentAction.registryName().toString(), village.model().getCenter().get().pivot().toShortString());
-				clearPlan();
+				invalidate(village);
 				break;
 			case SUCCESS:
 				currentAction = null;
@@ -111,6 +109,13 @@ public class HOA
 			default:
 				break;
 		}
+	}
+	
+	protected void invalidate(Village village)
+	{
+		if(currentAction != null)
+			LOGGER.info("## HOA plan invalidated with action {} at {} ##", currentAction.registryName().toString(), village.model().getCenter().get().pivot().toShortString());
+		clearPlan();
 	}
 	
 	public Optional<Action> currentAction() { return this.currentAction == null ? Optional.empty() : Optional.of(this.currentAction); }

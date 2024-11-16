@@ -8,10 +8,14 @@ import org.slf4j.Logger;
 
 import com.google.common.collect.Lists;
 import com.lying.Hrrmowners;
+import com.lying.entity.SurinaEntity;
 import com.lying.entity.village.VillagePartType;
+import com.lying.init.HOEntityTypes;
 import com.lying.network.ShowCubesPacket;
 import com.lying.reference.Reference;
 
+import dev.architectury.event.EventResult;
+import dev.architectury.event.events.common.EntityEvent;
 import dev.architectury.event.events.common.PlayerEvent;
 import dev.architectury.event.events.common.TickEvent;
 import net.minecraft.world.gen.structure.StructureType;
@@ -46,6 +50,16 @@ public class ServerBus
 		{
 			if(world.getTime()%Reference.Values.VILLAGE_TICK_RATE == 0)
 				Hrrmowners.MANAGER.tickVillages(world.getRegistryKey(), world);
+		});
+		
+		EntityEvent.ADD.register((ent, world) -> 
+		{
+			if(ent.getType() == HOEntityTypes.SURINA.get())
+			{
+				SurinaEntity surina = (SurinaEntity)ent;
+				Hrrmowners.MANAGER.getVillage(world.getRegistryKey(), surina.getBlockPos()).ifPresent(village -> surina.setVillage(village.id()));
+			}
+			return EventResult.pass();
 		});
 	}
 }

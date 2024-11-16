@@ -75,6 +75,7 @@ public class ActionPlacePart extends Action
 		{
 			case REQUEST:
 				// Find an available resident to supervise construction
+				// TODO Sort by proximity to target position
 				village.getResidentsMatching(s -> !s.hasHOATask() && s.canPerformHOATask()).stream().findFirst().ifPresent(r -> 
 				{
 					r.setHOATask(dest);

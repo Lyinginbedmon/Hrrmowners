@@ -14,6 +14,7 @@ import com.mojang.datafixers.util.Pair;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.SpawnGroup;
+import net.minecraft.entity.ai.FuzzyTargeting;
 import net.minecraft.entity.ai.NoPenaltyTargeting;
 import net.minecraft.entity.ai.brain.Activity;
 import net.minecraft.entity.ai.brain.MemoryModuleState;
@@ -27,12 +28,14 @@ import net.minecraft.entity.ai.brain.task.SingleTickTask;
 import net.minecraft.entity.ai.brain.task.Task;
 import net.minecraft.entity.ai.brain.task.TaskTriggerer;
 import net.minecraft.entity.ai.brain.task.WaitTask;
+import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.DebugInfoSender;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.village.VillagerData;
@@ -200,5 +203,41 @@ public class SurinaBrainTasks
 				Pair.of(LookAtMobTask.create(HOEntityTypes.SURINA.get(), 8.0f), 2), 
 				Pair.of(LookAtMobTask.create(EntityType.PLAYER, 8.0f), 2), 
 				Pair.of(new WaitTask(30, 60), 8))));
+	}
+	
+	public static Task<PathAwareEntity> createGoToPointOfInterestTask(float speed, int completionRange)
+	{
+		return TaskTriggerer.task(context -> context.group(context.queryMemoryAbsent(MemoryModuleType.WALK_TARGET)).apply(context, walkTarget -> (world, entity, time) -> 
+		{
+			if (world.isNearOccupiedPointOfInterest(entity.getBlockPos()))
+				return false;
+			
+			PointOfInterestStorage pointOfInterestStorage = world.getPointOfInterestStorage();
+			int distToPoint = pointOfInterestStorage.getDistanceFromNearestOccupied(ChunkSectionPos.from(entity.getBlockPos()));
+			Vec3d destination = null;
+			for (int k = 0; k < 5; ++k)
+			{
+				Vec3d option = FuzzyTargeting.find(entity, 15, 7, pos -> -pointOfInterestStorage.getDistanceFromNearestOccupied(ChunkSectionPos.from(pos)));
+				if(option == null)
+					continue;
+				
+				int dist = pointOfInterestStorage.getDistanceFromNearestOccupied(ChunkSectionPos.from(BlockPos.ofFloored(option)));
+				if(dist < distToPoint)
+				{
+					destination = option;
+					break;
+				}
+				
+				if(dist != distToPoint)
+					continue;
+				
+				destination = option;
+			}
+			
+			if(destination != null)
+				walkTarget.remember(new WalkTarget(destination, speed, completionRange));
+			
+			return true;
+		}));
 	}
 }
