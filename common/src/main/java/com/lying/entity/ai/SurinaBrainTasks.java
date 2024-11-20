@@ -46,7 +46,7 @@ import net.minecraft.world.poi.PointOfInterestType;
 public class SurinaBrainTasks
 {
 	@SuppressWarnings("rawtypes")
-	public static Task<SurinaEntity> createGoToSecondaryPosition(MemoryModuleType<List<GlobalPos>> secondaryPositions, float speed, int completionRange, int primaryPositionActivationDistance, MemoryModuleType<GlobalPos> primaryPosition)
+	public static <T extends PathAwareEntity> Task<T> createGoToSecondaryPosition(MemoryModuleType<List<GlobalPos>> secondaryPositions, float speed, int completionRange, int primaryPositionActivationDistance, MemoryModuleType<GlobalPos> primaryPosition)
 	{
 		MutableLong mutableLong = new MutableLong(0L);
 		return TaskTriggerer.task(context -> context.group(context.queryMemoryOptional(MemoryModuleType.WALK_TARGET), context.queryMemoryValue(secondaryPositions), context.queryMemoryValue(primaryPosition)).apply(context, (walkTarget, secondary, primary) -> (world, entity, time) -> {
@@ -205,7 +205,7 @@ public class SurinaBrainTasks
 				Pair.of(new WaitTask(30, 60), 8))));
 	}
 	
-	public static Task<PathAwareEntity> createGoToPointOfInterestTask(float speed, int completionRange)
+	public static <T extends PathAwareEntity> Task<T> createGoToPointOfInterestTask(float speed, int completionRange)
 	{
 		return TaskTriggerer.task(context -> context.group(context.queryMemoryAbsent(MemoryModuleType.WALK_TARGET)).apply(context, walkTarget -> (world, entity, time) -> 
 		{

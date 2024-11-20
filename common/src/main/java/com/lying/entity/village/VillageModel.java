@@ -8,6 +8,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Predicate;
 
+import org.slf4j.Logger;
+
 import com.google.common.collect.Lists;
 import com.lying.Hrrmowners;
 import com.lying.entity.village.Village.Resident;
@@ -31,6 +33,9 @@ import net.minecraft.world.World;
 
 public class VillageModel
 {
+	@SuppressWarnings("unused")
+	private static final Logger LOGGER = Hrrmowners.LOGGER;
+	
 	/* Census data representing the village's population */
 	private Map<Resident, Integer> census = new HashMap<>();
 	private int totalPop = 0;
@@ -40,6 +45,7 @@ public class VillageModel
 	
 	/** A cached list of all unoccupied connection points, as defined by jigsaw blocks*/
 	private final List<Connector> connectors = Lists.newArrayList();
+	private int connectorIndex = 0;
 	
 	/** Tally of different types of part within this model */
 	private final Map<Identifier, Integer> tally = new HashMap<>();
@@ -68,7 +74,11 @@ public class VillageModel
 		return true;
 	}
 	
+	/** Tally of all residents */
 	public int population() { return totalPop; }
+	
+	/** Tally of all non-queen residents */
+	public int residentPop() { return totalPop - residentsOfType(Resident.QUEEN); }
 	
 	public int residentsOfType(Resident type) { return Math.max(0, census.getOrDefault(type, 0)); }
 	
@@ -150,6 +160,7 @@ public class VillageModel
 			if(!connectors.isEmpty())
 				nbt.put("Connectors", connectorsToNbt(connectors));
 		}
+		nbt.putInt("SelectedConnector", connectorIndex);
 		return nbt;
 	}
 	
@@ -168,6 +179,7 @@ public class VillageModel
 		
 		if(nbt.contains("Connectors", NbtElement.LIST_TYPE))
 			connectors.addAll(nbtToConnectors(nbt.getList("Connectors", NbtElement.COMPOUND_TYPE)));
+		connectorIndex = nbt.getInt("SelectedConnector");
 		
 		if(nbt.contains("Census", NbtElement.COMPOUND_TYPE))
 		{
@@ -194,7 +206,12 @@ public class VillageModel
 	
 	public int openConnectors(Predicate<Connector> predicate) { return (int)connectors.stream().filter(predicate).count(); }
 	
-	public Connector selectedConnector() { return connectors.get(0); }
+	public Optional<Connector> selectedConnector()
+	{
+		return cannotExpand() ? Optional.empty() : Optional.of(connectors.get(connectorIndex%connectors.size()));
+	}
+	
+	public void incSelectedConnector() { connectorIndex++; }
 	
 	public int getTallyOf(VillagePartType type) { return tally.getOrDefault(type.registryName(), 0); }
 	
@@ -221,12 +238,33 @@ public class VillageModel
 		if(parts.stream().anyMatch(part2 -> part2.id.equals(part.id) || part2.bounds().intersects(part.bounds())))
 			return false;
 		
+		// Selected connector, prior to updating the list of available connectors
+		Optional<Connector> lastConnector = selectedConnector();
+		
 		parts.add(part);
 		tally.put(part.type.registryName(), tally.getOrDefault(part.type.registryName(), 0) + 1);
 		
 		recacheConnectors(shouldNotify);
 		if(shouldNotify)
 			notifyObservers(world.getRegistryKey());
+		
+		// Move selected connector the closest viable connector
+		if(lastConnector.isPresent())
+		{
+			BlockPos pos = lastConnector.get().pos;
+			int closestInd = 0;
+			double closestDist = Double.MAX_VALUE;
+			for(int index = 0; index < connectors.size(); index++)
+			{
+				double dist = pos.getSquaredDistance(connectors.get(index).pos);
+				if(dist < closestDist)
+				{
+					closestDist = dist;
+					closestInd = index;
+				}
+			}
+			connectorIndex = closestInd;
+		}
 		return true;
 	}
 	

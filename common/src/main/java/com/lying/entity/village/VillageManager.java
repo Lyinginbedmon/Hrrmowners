@@ -11,8 +11,14 @@ import org.slf4j.Logger;
 
 import com.google.common.collect.Lists;
 import com.lying.Hrrmowners;
+import com.lying.block.entity.NestBlockEntity;
+import com.lying.entity.SurinaEntity;
+import com.lying.init.HOBlockEntityTypes;
+import com.lying.init.HOEntityTypes;
 import com.lying.init.HOVillagePartTypes;
+import com.lying.init.HOVillagerProfessions;
 
+import net.minecraft.entity.ai.brain.MemoryModuleType;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
@@ -22,6 +28,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
@@ -88,7 +95,25 @@ public class VillageManager
 			return false;
 		
 		village.addPart(partOpt.get(), world, false);
-		return addVillage(dimension, world, village);
+		if(addVillage(dimension, world, village))
+		{
+			// Spawn in a queen to lead the new village
+			partOpt.get().getTilesOfType(world, HOBlockEntityTypes.NEST.get()).stream().findFirst().ifPresent(block -> 
+			{
+				NestBlockEntity nest = (NestBlockEntity)world.getBlockEntity(block);
+				
+				SurinaEntity queen = HOEntityTypes.SURINA.get().create(world);
+				queen.setPos(block.getX(), block.getY(), block.getZ());
+				queen.setVillagerData(queen.getVillagerData().withProfession(HOVillagerProfessions.QUEEN.get()).withLevel(2));
+				
+				queen.getBrain().remember(MemoryModuleType.JOB_SITE, new GlobalPos(world.getRegistryKey(), block));
+				
+				world.spawnEntity(queen);
+				nest.tryToSeat(queen);
+			});
+			return true;
+		}
+		return false;
 	}
 	
 	public boolean addVillage(RegistryKey<World> dimension, ServerWorld world, Village village)

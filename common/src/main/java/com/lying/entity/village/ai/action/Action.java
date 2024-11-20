@@ -51,7 +51,11 @@ public abstract class Action
 		return (this.lastResult = enact(model, village, world));
 	}
 	
-	protected abstract Result enact(VillageModel model, Village village, ServerWorld world);
+	/** Applies this action to the given model during execution */
+	protected Result enact(VillageModel model, Village village, ServerWorld world)
+	{
+		return consider(model, world) ? Result.SUCCESS : Result.FAILURE;
+	}
 	
 	/** Changes caused by pings from residents */
 	public boolean acceptPing(BlockPos target, SurinaEntity resident, VillageModel model) { return false; }

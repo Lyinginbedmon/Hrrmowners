@@ -5,16 +5,21 @@ import java.util.UUID;
 
 import org.jetbrains.annotations.Nullable;
 
+import com.google.common.base.Predicate;
 import com.lying.block.NestBlock;
 import com.lying.entity.SeatEntity;
+import com.lying.entity.SurinaEntity;
 import com.lying.init.HOBlockEntityTypes;
 import com.lying.init.HOEntityTypes;
+import com.lying.init.HOVillagerProfessions;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.registry.RegistryWrapper;
@@ -24,6 +29,15 @@ import net.minecraft.world.World;
 
 public class NestBlockEntity extends BlockEntity
 {
+	private static final Predicate<Entity> IS_AUTHORITY_FIGURE = e -> 
+	{
+		if(e.getType() == EntityType.PLAYER)
+			return ((PlayerEntity)e).isCreative();
+		
+		if(e.getType() == HOEntityTypes.SURINA.get())
+			return ((SurinaEntity)e).getVillagerData().getProfession() == HOVillagerProfessions.QUEEN.get();
+		return false;
+	};
 	private Optional<UUID> seatID = Optional.empty();
 	private Entity seatEnt = null;
 	
@@ -81,7 +95,7 @@ public class NestBlockEntity extends BlockEntity
 	public boolean isOccupied()
 	{
 		tryFindSeat();
-		return seatEnt != null && seatEnt.hasPassengers();
+		return seatEnt != null && seatEnt.hasPassengers() && seatEnt.getPassengerList().stream().anyMatch(IS_AUTHORITY_FIGURE);
 	}
 	
 	public boolean tryToSeat(Entity sitter)

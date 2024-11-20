@@ -15,6 +15,7 @@ import com.lying.entity.ai.SurinaTaskListProvider;
 import com.lying.entity.village.Village;
 import com.lying.init.HOItems;
 import com.lying.init.HOMemoryModuleTypes;
+import com.lying.init.HOVillagerProfessions;
 import com.lying.reference.Reference;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Dynamic;
@@ -247,7 +248,7 @@ public class SurinaEntity extends MerchantEntity implements VillagerDataContaine
 		LOGGER.info(" * Resident supervision requested at {}", posIn.pos().toShortString());
 	}
 	
-	public boolean canPerformHOATask() { return isAlive() && !isAiDisabled() && !hasHOATask(); }
+	public boolean canPerformHOATask() { return isAlive() && !isAiDisabled() && !isBaby() && !hasHOATask() && getVillagerData().getProfession() != HOVillagerProfessions.QUEEN.get(); }
 	
 	public boolean hasHOATask() { return getBrain().getOptionalMemory(HOMemoryModuleTypes.HOA_TASK.get()).isPresent(); }
 	

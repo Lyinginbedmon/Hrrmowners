@@ -57,7 +57,7 @@ public class ServerBus
 			if(ent.getType() == HOEntityTypes.SURINA.get())
 			{
 				SurinaEntity surina = (SurinaEntity)ent;
-				Hrrmowners.MANAGER.getVillage(world.getRegistryKey(), surina.getBlockPos()).ifPresent(village -> surina.setVillage(village.id()));
+				Hrrmowners.MANAGER.getVillage(world.getRegistryKey(), surina.getBlockPos()).ifPresent(village -> village.registerResident(surina));
 			}
 			return EventResult.pass();
 		});

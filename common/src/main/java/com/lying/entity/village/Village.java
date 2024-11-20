@@ -10,14 +10,18 @@ import org.slf4j.Logger;
 
 import com.google.common.collect.Lists;
 import com.lying.Hrrmowners;
+import com.lying.block.entity.NestBlockEntity;
 import com.lying.entity.SurinaEntity;
 import com.lying.entity.village.ai.Connector;
 import com.lying.entity.village.ai.HOA;
 import com.lying.entity.village.ai.action.Action;
+import com.lying.entity.village.ai.action.ActionIncConnector;
 import com.lying.entity.village.ai.action.ActionPlacePart;
 import com.lying.entity.village.ai.goal.GoalHaveConnectors;
 import com.lying.entity.village.ai.goal.GoalTypeMinimum;
+import com.lying.init.HOBlockEntityTypes;
 import com.lying.init.HOVillagePartTypes;
+import com.lying.init.HOVillagerProfessions;
 import com.lying.reference.Reference;
 
 import net.minecraft.nbt.NbtCompound;
@@ -77,12 +81,13 @@ public class Village
 				new GoalHaveConnectors(3, t -> t.canLinkTo(HOVillagePartTypes.STREET.get())), 
 				new GoalHaveConnectors(1, t -> t.canLinkTo(HOVillagePartTypes.HOUSE.get())),
 				new GoalTypeMinimum(HOVillagePartTypes.STREET, 1),
-				new GoalTypeMinimum(HOVillagePartTypes.HOUSE, VillageModel::population)
-//				new GoalTypeMinimum(HOVillagePartTypes.WORK, m -> m.residentsOfType(Resident.WORKER))
+				new GoalTypeMinimum(HOVillagePartTypes.HOUSE, VillageModel::residentPop),
+				new GoalTypeMinimum(HOVillagePartTypes.WORK, m -> m.residentsOfType(Resident.WORKER))
 				));
 		
 		for(VillagePartType type : HOVillagePartTypes.values())
 			hoa.addAction(new ActionPlacePart(type, biome));
+		hoa.addAction(new ActionIncConnector());
 	}
 	
 	public UUID id() { return this.id; }
@@ -110,30 +115,30 @@ public class Village
 	{
 		if(model.isEmpty())
 			return;
-//		else if(throneCached.isPresent())
-//		{
-//			// Ensure the last-identified active throne is still active
-//			BlockPos pos = throneCached.get();
-//			Optional<NestBlockEntity> throne = world.getBlockEntity(pos, HOBlockEntityTypes.NEST.get());
-//			if(throne.isEmpty() || !throne.get().isOccupied())
-//			{
-//				throneCached = Optional.empty();
-//				return;
-//			}
-//		}
-//		else
-//		{
-//			Optional<VillagePart> core = model.getCenter();
-//			if(core.isEmpty())
-//				return;
-//			
-//			// Try to find an active throne
-//			VillagePart center = core.get();
-//			throneCached = center.getTilesOfType(world, HOBlockEntityTypes.NEST.get()).stream()
-//				.filter(p -> ((NestBlockEntity)world.getBlockEntity(p)).isOccupied()).findFirst();
-//			
-//			return;
-//		}
+		else if(throneCached.isPresent())
+		{
+			// Ensure the last-identified active throne is still active
+			BlockPos pos = throneCached.get();
+			Optional<NestBlockEntity> throne = world.getBlockEntity(pos, HOBlockEntityTypes.NEST.get());
+			if(throne.isEmpty() || !throne.get().isOccupied())
+			{
+				throneCached = Optional.empty();
+				return;
+			}
+		}
+		else
+		{
+			Optional<VillagePart> core = model.getCenter();
+			if(core.isEmpty())
+				return;
+			
+			// Try to find an active throne
+			VillagePart center = core.get();
+			throneCached = center.getTilesOfType(world, HOBlockEntityTypes.NEST.get()).stream()
+				.filter(p -> ((NestBlockEntity)world.getBlockEntity(p)).isOccupied()).findFirst();
+			
+			return;
+		}
 		
 		// Update residential census
 		if(world.getTime()%(Reference.Values.VILLAGE_TICK_RATE * 2) == 0)
@@ -142,16 +147,19 @@ public class Village
 			model.getEnclosedResidents(SurinaEntity.class, world, 3D).forEach(r -> 
 			{
 				if(!r.hasVillage() || r.villageID().equals(id) && !residents.contains(r))
-				{
-					r.setVillage(id);
-					residents.add(r);
-				}
+					registerResident(r);
 			});
 		}
 		
 		// Periodically evaluate goals and update plan if necessary
 		if(hoa.hasPlan())
 			hoa.tickPlan(world, this);
+	}
+	
+	public void registerResident(SurinaEntity entity)
+	{
+		entity.setVillage(id);
+		residents.add(entity);
 	}
 	
 	public NbtCompound writeToNbt(NbtCompound nbt, ServerWorld world)
@@ -303,10 +311,8 @@ public class Village
 			Hrrmowners.LOGGER.error("Structure pool {} is empty", poolKey.getValue().toString());
 			return Optional.empty();
 		}
-		
 		for(StructurePoolElement element : optPool.get().getElementIndicesInRandomOrder(rand).stream().filter(e -> e.getType() != StructurePoolElementType.EMPTY_POOL_ELEMENT).toList())
 			return makeNewPart(element, type, position, rotation, server.getStructureTemplateManager());
-		
 		Hrrmowners.LOGGER.error("No useable elements found in structure pool {}", poolKey.getValue().toString());
 		return Optional.empty();
 	}
@@ -321,18 +327,19 @@ public class Village
 				rotation, 
 				element.getBoundingBox(manager, position, rotation), 
 				StructureLiquidSettings.APPLY_WATERLOGGING);
-		
 		return Optional.of(new VillagePart(UUID.randomUUID(), type, poolStructurePiece, manager));
 	}
 	
 	public static enum Resident implements StringIdentifiable
 	{
 		/** Adults capable of having a profession */
-		WORKER(s -> !s.isBaby() && s.getVillagerData().getProfession() != VillagerProfession.NITWIT),
+		WORKER(s -> !s.isBaby() && s.getVillagerData().getProfession() != VillagerProfession.NITWIT && s.getVillagerData().getProfession() != HOVillagerProfessions.QUEEN.get()),
 		/** Adult nitwits */
 		NEET(s -> !s.isBaby() && s.getVillagerData().getProfession() == VillagerProfession.NITWIT),
 		/** Children */
-		CHILD(s -> s.isBaby());
+		CHILD(s -> s.isBaby()),
+		/** Queen of a given village */
+		QUEEN(s -> !s.isBaby() && s.getVillagerData().getProfession() == HOVillagerProfessions.QUEEN.get());
 		
 		private final Predicate<SurinaEntity> check;
 		

@@ -65,7 +65,7 @@ public class Connector
 		
 		for(VillagePartType t : set)
 			if(t == null || type.canConnectTo(t))
-				return true;;
+				return true;
 		return false;
 	}
 	

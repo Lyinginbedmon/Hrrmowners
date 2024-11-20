@@ -99,7 +99,7 @@ public class ConstructVillagePartTask extends MultiTickTask<SurinaEntity>
 				double dist = Math.sqrt(entity.getBlockPos().getSquaredDistance(target));
 				if(entity.getNavigation().isFollowingPath())
 					return;
-				else if(dist > 1D)
+				else if(dist > 2D)
 					stop();
 				else
 					setState(State.BUILDING);

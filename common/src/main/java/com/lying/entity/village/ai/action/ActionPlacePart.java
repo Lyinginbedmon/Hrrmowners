@@ -51,7 +51,7 @@ public class ActionPlacePart extends Action
 		partToAdd = partIn;
 	}
 	
-	public Action makeCopy() { return new ActionPlacePart(type, style, partToAdd); }
+	protected Action makeCopy() { return new ActionPlacePart(type, style, partToAdd); }
 	
 	public boolean canTakeAction(VillageModel model)
 	{
@@ -66,10 +66,10 @@ public class ActionPlacePart extends Action
 	
 	protected Result enact(VillageModel model, Village village, ServerWorld world)
 	{
-		if(partToAdd.isEmpty())
+		if(partToAdd.isEmpty() || model.selectedConnector().isEmpty())
 			return Result.FAILURE;
 		
-		BlockPos connector = model.selectedConnector().pos;
+		BlockPos connector = model.selectedConnector().get().pos;
 		GlobalPos dest = new GlobalPos(world.getRegistryKey(), connector);
 		switch(phase)
 		{
@@ -100,7 +100,7 @@ public class ActionPlacePart extends Action
 	
 	public boolean acceptPing(BlockPos target, SurinaEntity resident, VillageModel model)
 	{
-		if(target.getSquaredDistance(model.selectedConnector().pos) > 1 || phase != Phase.WAIT || !resident.hasFinishedHOATask())
+		if(target.getSquaredDistance(model.selectedConnector().get().pos) > 1 || phase != Phase.WAIT || !resident.hasFinishedHOATask())
 			return false;
 		
 		resident.markHOATaskCompleted();
@@ -116,7 +116,7 @@ public class ActionPlacePart extends Action
 		BlockRotation[] rotations = BlockRotation.values();
 		BlockRotation baseRotation = rotations[rand.nextInt(rotations.length)];
 		
-		Connector connector = model.selectedConnector();
+		Connector connector = model.selectedConnector().get();
 		DynamicRegistryManager registryManager = world.getRegistryManager();
 		Registry<StructurePool> registry = registryManager.get(RegistryKeys.TEMPLATE_POOL);
 		StructurePoolAliasLookup aliasLookup = StructurePoolAliasLookup.create(List.of(), connector.linkPos(), world.getSeed());

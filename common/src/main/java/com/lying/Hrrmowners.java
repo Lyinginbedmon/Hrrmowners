@@ -14,7 +14,9 @@ import com.lying.init.HOCommands;
 import com.lying.init.HOEntityTypes;
 import com.lying.init.HOItems;
 import com.lying.init.HOMemoryModuleTypes;
+import com.lying.init.HOPointOfInterestTypes;
 import com.lying.init.HOVillagePartTypes;
+import com.lying.init.HOVillagerProfessions;
 import com.lying.reference.Reference;
 import com.lying.utility.ServerBus;
 
@@ -58,6 +60,8 @@ public final class Hrrmowners
     	HOEntityTypes.init();
     	HOMemoryModuleTypes.init();
     	HOItems.init();
+    	HOPointOfInterestTypes.init();
+    	HOVillagerProfessions.init();
     	HOVillagePartTypes.init();
     }
     
