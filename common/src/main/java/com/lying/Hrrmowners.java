@@ -19,6 +19,7 @@ import com.lying.init.HOVillagePartTypes;
 import com.lying.init.HOVillagerProfessions;
 import com.lying.reference.Reference;
 import com.lying.utility.ServerBus;
+import com.lying.utility.XPlatHandler;
 
 import net.minecraft.server.network.ServerPlayerEntity;
 
@@ -30,6 +31,11 @@ public final class Hrrmowners
     public static List<ServerPlayerEntity> PLAYERS = Lists.newArrayList();
     
     public static final VillageManager MANAGER = new VillageManager();
+    
+    public static XPlatHandler HANDLER = new XPlatHandler()
+	{
+		public void registerPOIs() { }
+	};
     
 	/*
 	 * Goal: A system that autonomously manages villages to fulfill the needs of its occupants
