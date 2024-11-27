@@ -22,6 +22,9 @@ import com.mojang.serialization.Dynamic;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import net.minecraft.entity.AnimationState;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityDimensions;
+import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.ai.brain.Activity;
@@ -66,7 +69,6 @@ import net.minecraft.util.math.GlobalPos;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TradeOffers;
 import net.minecraft.village.VillagerData;
-import net.minecraft.village.VillagerDataContainer;
 import net.minecraft.village.VillagerProfession;
 import net.minecraft.village.VillagerType;
 import net.minecraft.world.World;
@@ -74,12 +76,13 @@ import net.minecraft.world.poi.PointOfInterestStorage;
 import net.minecraft.world.poi.PointOfInterestType;
 import net.minecraft.world.poi.PointOfInterestTypes;
 
-public class SurinaEntity extends MerchantEntity implements VillagerDataContainer
+public class SurinaEntity extends MerchantEntity implements IVillager
 {
 	private static final Logger LOGGER = Hrrmowners.LOGGER;
 	private static final TrackedData<VillagerData> VILLAGER_DATA = DataTracker.registerData(SurinaEntity.class, TrackedDataHandlerRegistry.VILLAGER_DATA);
 	private static final TrackedData<Integer> ANIMATION = DataTracker.registerData(SurinaEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private static final TrackedData<Optional<UUID>> VILLAGE_ID	= DataTracker.registerData(SurinaEntity.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
+	private static final TrackedData<Boolean> SITTING = DataTracker.registerData(SurinaEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	private static final ImmutableList<MemoryModuleType<?>> MEMORY_MODULES = ImmutableList.of(
 			MemoryModuleType.HOME, 
 			MemoryModuleType.JOB_SITE, 
@@ -115,8 +118,10 @@ public class SurinaEntity extends MerchantEntity implements VillagerDataContaine
 				HOMemoryModuleTypes.HOA_TASK.get(),
 				HOMemoryModuleTypes.HOA_TASK_DONE.get()});
 	private static final ImmutableList<SensorType<? extends Sensor<? super SurinaEntity>>> SENSORS = ImmutableList.of(SensorType.NEAREST_LIVING_ENTITIES, SensorType.NEAREST_PLAYERS, SensorType.NEAREST_ITEMS, SensorType.NEAREST_BED, SensorType.HURT_BY, SensorType.VILLAGER_HOSTILES, SensorType.VILLAGER_BABIES, SensorType.GOLEM_DETECTED);
-	public static final Map<MemoryModuleType<GlobalPos>, BiPredicate<SurinaEntity, RegistryEntry<PointOfInterestType>>> POINTS_OF_INTEREST = ImmutableMap.of(MemoryModuleType.HOME, (villager, arg2) -> arg2.matchesKey(PointOfInterestTypes.HOME), MemoryModuleType.JOB_SITE, (villager, arg2) -> villager.getVillagerData().getProfession().heldWorkstation().test((RegistryEntry<PointOfInterestType>)arg2), MemoryModuleType.POTENTIAL_JOB_SITE, (villager, arg2) -> VillagerProfession.IS_ACQUIRABLE_JOB_SITE.test((RegistryEntry<PointOfInterestType>)arg2), MemoryModuleType.MEETING_POINT, (villager, arg2) -> arg2.matchesKey(PointOfInterestTypes.MEETING));
+	public static final Map<MemoryModuleType<GlobalPos>, BiPredicate<SurinaEntity, RegistryEntry<PointOfInterestType>>> POINTS_OF_INTEREST = ImmutableMap.of(MemoryModuleType.HOME, (villager, arg2) -> arg2.matchesKey(PointOfInterestTypes.HOME), MemoryModuleType.JOB_SITE, (villager, arg2) -> villager.getVillagerData().getProfession().heldWorkstation().test((RegistryEntry<PointOfInterestType>)arg2), MemoryModuleType.POTENTIAL_JOB_SITE, (villager, arg2) -> HOVillagerProfessions.IS_SURINA_JOB_SITE.test((RegistryEntry<PointOfInterestType>)arg2), MemoryModuleType.MEETING_POINT, (villager, arg2) -> arg2.matchesKey(PointOfInterestTypes.MEETING));
 	private boolean natural;
+	
+	protected static final EntityDimensions SITTING_DIMENSIONS = EntityDimensions.fixed((float)0.6f, (float)1.25f);
 	
 	public final Map<SurinaAnimation, AnimationState> ANIM_MAP = Map.of(
 			SurinaAnimation.IDLE, new AnimationState(),
@@ -129,7 +134,7 @@ public class SurinaEntity extends MerchantEntity implements VillagerDataContaine
 		super(entityType, world);
 		((MobNavigation)getNavigation()).setCanPathThroughDoors(true);
 		getNavigation().setCanSwim(true);
-		setVillagerData(getVillagerData().withType(VillagerType.DESERT).withProfession(VillagerProfession.NONE));
+		setVillagerData(getVillagerData().withType(VillagerType.DESERT).withProfession(HOVillagerProfessions.NEET.get()));
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -187,6 +192,39 @@ public class SurinaEntity extends MerchantEntity implements VillagerDataContaine
 		builder.add(VILLAGE_ID, Optional.empty());
 		builder.add(VILLAGER_DATA, new VillagerData(VillagerType.DESERT, VillagerProfession.NITWIT, 1));
 		builder.add(ANIMATION, 0);
+		builder.add(SITTING, false);
+	}
+	
+	public static DefaultAttributeContainer.Builder createSurinaAttributes()
+	{
+		return MobEntity.createMobAttributes().add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.5).add(EntityAttributes.GENERIC_FOLLOW_RANGE, 48.0);
+	}
+	
+	public void writeCustomDataToNbt(NbtCompound nbt)
+	{
+		super.writeCustomDataToNbt(nbt);
+		if(hasVillage())
+			nbt.putUuid("Village", villageID());
+		VillagerData.CODEC.encodeStart(NbtOps.INSTANCE, getVillagerData()).resultOrPartial(LOGGER::error).ifPresent(arg2 -> nbt.put("VillagerData", arg2));
+		if(natural)
+			nbt.putBoolean("AssignProfessionWhenSpawned", true);
+		if(isSitting())
+			nbt.putBoolean("Sitting", true);
+	}
+	
+	public void readCustomDataFromNbt(NbtCompound nbt)
+	{
+		super.readCustomDataFromNbt(nbt);
+		if(nbt.contains("Village", NbtElement.INT_ARRAY_TYPE))
+			setVillage(NbtHelper.toUuid(nbt.get("Village")));
+		if(nbt.contains("VillagerData", NbtElement.COMPOUND_TYPE))
+			VillagerData.CODEC.parse(NbtOps.INSTANCE, nbt.get("VillagerData")).resultOrPartial(LOGGER::error).ifPresent(villagerData -> this.dataTracker.set(VILLAGER_DATA, villagerData));
+		if(!getWorld().isClient())
+			reinitializeBrain((ServerWorld)getWorld());
+		if(nbt.contains("AssignProfessionWhenSpawned"))
+			this.natural = nbt.getBoolean("AssignProfessionWhenSpawned");
+		if(nbt.contains("Sitting"))
+			getDataTracker().set(SITTING, nbt.getBoolean("Sitting"));
 	}
 	
 	public void onTrackedDataSet(TrackedData<?> data)
@@ -202,6 +240,8 @@ public class SurinaEntity extends MerchantEntity implements VillagerDataContaine
 					entry.getValue().stop();
 			});
 		}
+		if(SITTING.equals(data))
+			calculateDimensions();
 		super.onTrackedDataSet(data);
 	}
 	
@@ -244,23 +284,56 @@ public class SurinaEntity extends MerchantEntity implements VillagerDataContaine
 	
 	public void setHOATask(GlobalPos posIn)
 	{
-		getBrain().remember(HOMemoryModuleTypes.HOA_TASK.get(), posIn);
-		LOGGER.info(" * Resident supervision requested at {}", posIn.pos().toShortString());
+		this.brain.remember(HOMemoryModuleTypes.HOA_TASK.get(), posIn);
+		LOGGER.info(" * Resident supervision requested at {}, success {}", posIn.pos().toShortString(), hasHOATask());
 	}
 	
 	public boolean canPerformHOATask() { return isAlive() && !isAiDisabled() && !isBaby() && !hasHOATask() && getVillagerData().getProfession() != HOVillagerProfessions.QUEEN.get(); }
 	
-	public boolean hasHOATask() { return getBrain().getOptionalMemory(HOMemoryModuleTypes.HOA_TASK.get()).isPresent(); }
+	public boolean hasHOATask() { return this.brain.getOptionalMemory(HOMemoryModuleTypes.HOA_TASK.get()).isPresent(); }
 	
-	public GlobalPos getHOATask() { return getBrain().getOptionalMemory(HOMemoryModuleTypes.HOA_TASK.get()).orElse(null); }
+	public boolean hasHOATask(GlobalPos pos)
+	{
+		if(hasHOATask())
+		{
+			GlobalPos target = getHOATask();
+			return target.dimension() == pos.dimension() && target.pos().getSquaredDistance(pos.pos()) < 1D;
+		}
+		return false;
+	}
 	
-	public boolean hasFinishedHOATask() { return isAlive() && getBrain().getOptionalMemory(HOMemoryModuleTypes.HOA_TASK_DONE.get()).orElse(false); }
+	public GlobalPos getHOATask() { return this.brain.getOptionalMemory(HOMemoryModuleTypes.HOA_TASK.get()).orElse(null); }
+	
+	public boolean hasFinishedHOATask() { return isAlive() && this.brain.getOptionalMemory(HOMemoryModuleTypes.HOA_TASK_DONE.get()).orElse(false); }
 	
 	public void markHOATaskCompleted()
 	{
-		Brain<SurinaEntity> brain = getBrain();
-		brain.forget(HOMemoryModuleTypes.HOA_TASK.get());
-		brain.forget(HOMemoryModuleTypes.HOA_TASK_DONE.get());
+		LOGGER.info(" * Resident HOA task completed");
+		this.brain.forget(HOMemoryModuleTypes.HOA_TASK.get());
+		this.brain.forget(HOMemoryModuleTypes.HOA_TASK_DONE.get());
+	}
+	
+	public boolean isSitting()
+	{
+		return hasVehicle() || getDataTracker().get(SITTING).booleanValue();
+	}
+	
+	protected EntityDimensions getBaseDimensions(EntityPose pose)
+	{
+		return isSitting() ? SITTING_DIMENSIONS.scaled(getScaleFactor()) : super.getBaseDimensions(getPose());
+	}
+	
+	public boolean startRiding(Entity vehicle)
+	{
+		boolean result = super.startRiding(vehicle);
+		getDataTracker().set(SITTING, hasVehicle());
+		return result;
+	}
+	
+	public void dismountVehicle()
+	{
+		super.dismountVehicle();
+		getDataTracker().set(SITTING, hasVehicle());
 	}
 	
 	protected void onGrowUp()
@@ -268,34 +341,6 @@ public class SurinaEntity extends MerchantEntity implements VillagerDataContaine
 		super.onGrowUp();
 		if(!getWorld().isClient())
 			reinitializeBrain((ServerWorld)getWorld());
-	}
-	
-	public static DefaultAttributeContainer.Builder createSurinaAttributes()
-	{
-		return MobEntity.createMobAttributes().add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.5).add(EntityAttributes.GENERIC_FOLLOW_RANGE, 48.0);
-	}
-	
-	public void writeCustomDataToNbt(NbtCompound nbt)
-	{
-		super.writeCustomDataToNbt(nbt);
-		if(hasVillage())
-			nbt.putUuid("Village", villageID());
-		VillagerData.CODEC.encodeStart(NbtOps.INSTANCE, getVillagerData()).resultOrPartial(LOGGER::error).ifPresent(arg2 -> nbt.put("VillagerData", arg2));
-		if(natural)
-			nbt.putBoolean("AssignProfessionWhenSpawned", true);
-	}
-	
-	public void readCustomDataFromNbt(NbtCompound nbt)
-	{
-		super.readCustomDataFromNbt(nbt);
-		if(nbt.contains("Village", NbtElement.INT_ARRAY_TYPE))
-			setVillage(NbtHelper.toUuid(nbt.get("Village")));
-		if(nbt.contains("VillagerData", NbtElement.COMPOUND_TYPE))
-			VillagerData.CODEC.parse(NbtOps.INSTANCE, nbt.get("VillagerData")).resultOrPartial(LOGGER::error).ifPresent(villagerData -> this.dataTracker.set(VILLAGER_DATA, villagerData));
-		if(!getWorld().isClient())
-			reinitializeBrain((ServerWorld)getWorld());
-		if(nbt.contains("AssignProfessionWhenSpawned"))
-			this.natural = nbt.getBoolean("AssignProfessionWhenSpawned");
 	}
 	
 	public boolean canImmediatelyDespawn(double distSqr) { return false; }

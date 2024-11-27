@@ -7,9 +7,11 @@ import com.lying.entity.SurinaEntity;
 import com.lying.reference.Reference;
 
 import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.EntityRendererFactory.Context;
 import net.minecraft.client.render.entity.MobEntityRenderer;
 import net.minecraft.client.render.entity.feature.EyesFeatureRenderer;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 
 public class SurinaEntityRenderer extends MobEntityRenderer<SurinaEntity, SurinaEntityModel<SurinaEntity>>
@@ -25,6 +27,12 @@ public class SurinaEntityRenderer extends MobEntityRenderer<SurinaEntity, Surina
 			public RenderLayer getEyesTexture() { return RenderLayer.getEyes(SurinaEntityRenderer.EYES_TEXTURE); }
 		});
 		this.addFeature(new SurinaCloakFeatureRenderer<SurinaEntity>(this, ctx.getModelLoader()));
+	}
+	
+	public void render(SurinaEntity livingEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i)
+	{
+		getModel().isSitting = livingEntity.isSitting();
+		super.render(livingEntity, f, g, matrixStack, vertexConsumerProvider, i);
 	}
 	
 	public Identifier getTexture(SurinaEntity var1)

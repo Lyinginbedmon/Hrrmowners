@@ -6,7 +6,6 @@ import java.util.Optional;
 import org.apache.commons.lang3.mutable.MutableLong;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.lying.entity.SurinaEntity;
 import com.lying.init.HOEntityTypes;
 import com.mojang.datafixers.util.Pair;
@@ -16,32 +15,20 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.SpawnGroup;
 import net.minecraft.entity.ai.FuzzyTargeting;
 import net.minecraft.entity.ai.NoPenaltyTargeting;
-import net.minecraft.entity.ai.brain.Activity;
-import net.minecraft.entity.ai.brain.MemoryModuleState;
 import net.minecraft.entity.ai.brain.MemoryModuleType;
 import net.minecraft.entity.ai.brain.WalkTarget;
 import net.minecraft.entity.ai.brain.task.LookAtMobTask;
-import net.minecraft.entity.ai.brain.task.LookTargetUtil;
-import net.minecraft.entity.ai.brain.task.MultiTickTask;
 import net.minecraft.entity.ai.brain.task.RandomTask;
 import net.minecraft.entity.ai.brain.task.SingleTickTask;
 import net.minecraft.entity.ai.brain.task.Task;
 import net.minecraft.entity.ai.brain.task.TaskTriggerer;
 import net.minecraft.entity.ai.brain.task.WaitTask;
 import net.minecraft.entity.mob.PathAwareEntity;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.DebugInfoSender;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.village.VillagerData;
-import net.minecraft.village.VillagerProfession;
 import net.minecraft.world.poi.PointOfInterestStorage;
-import net.minecraft.world.poi.PointOfInterestType;
 
 public class SurinaBrainTasks
 {
@@ -65,44 +52,6 @@ public class SurinaBrainTasks
 				mutableLong.setValue(time + 100L);
 			}
 			return true;
-		}));
-	}
-	
-	public static Task<SurinaEntity> createGoToWork()
-	{
-		return TaskTriggerer.task(context -> context.group(context.queryMemoryValue(MemoryModuleType.POTENTIAL_JOB_SITE), context.queryMemoryOptional(MemoryModuleType.JOB_SITE)).apply(context, (potentialJobSite, jobSite) -> (world, entity, time) -> {
-			GlobalPos globalPos = (GlobalPos)context.getValue(potentialJobSite);
-			if(!globalPos.pos().isWithinDistance(entity.getPos(), 2.0) && !entity.isNatural())
-				return false;
-			
-			potentialJobSite.forget();
-			jobSite.remember(globalPos);
-			world.sendEntityStatus(entity, (byte)14);
-			if(entity.getVillagerData().getProfession() != VillagerProfession.NONE)
-				return true;
-			
-			MinecraftServer minecraftServer = world.getServer();
-			Optional.ofNullable(minecraftServer.getWorld(globalPos.dimension())).flatMap(jobSiteWorld -> jobSiteWorld.getPointOfInterestStorage().getType(globalPos.pos())).flatMap(poiType -> Registries.VILLAGER_PROFESSION.stream().filter(profession -> profession.heldWorkstation().test((RegistryEntry<PointOfInterestType>)poiType)).findFirst()).ifPresent(profession -> 
-			{
-				entity.setVillagerData(entity.getVillagerData().withProfession(profession));
-				entity.reinitializeBrain(world);
-			});
-			return true;
-		}));
-	}
-	
-	public static Task<SurinaEntity> createLoseJobOnSiteLoss()
-	{
-		return TaskTriggerer.task(context -> context.group(context.queryMemoryAbsent(MemoryModuleType.JOB_SITE)).apply(context, jobSite -> (world, entity, time) -> 
-		{
-			VillagerData villagerData = entity.getVillagerData();
-			if (villagerData.getProfession() != VillagerProfession.NONE && villagerData.getProfession() != VillagerProfession.NITWIT && entity.getExperience() == 0 && villagerData.getLevel() <= 1)
-			{
-				entity.setVillagerData(entity.getVillagerData().withProfession(VillagerProfession.NONE));
-				entity.reinitializeBrain(world);
-				return true;
-			}
-			return false;
 		}));
 	}
 	
@@ -138,45 +87,6 @@ public class SurinaBrainTasks
 				walkTarget.remember(new WalkTarget(globalPos.pos(), speed, completionRange));
 			return true;
 		}));
-	}
-	
-	public static Task<SurinaEntity> createWalkTowardsJobSite(final float speed)
-	{
-		return new MultiTickTask<SurinaEntity>(ImmutableMap.of(MemoryModuleType.POTENTIAL_JOB_SITE, MemoryModuleState.VALUE_PRESENT), 1200)
-				{
-					protected boolean shouldRun(ServerWorld arg, SurinaEntity arg2)
-					{
-						return arg2.getBrain().getFirstPossibleNonCoreActivity().map(activity -> activity == Activity.IDLE || activity == Activity.WORK || activity == Activity.PLAY).orElse(true);
-					}
-					
-					protected boolean shouldKeepRunning(ServerWorld arg, SurinaEntity arg2, long l)
-					{
-						return arg2.getBrain().hasMemoryModule(MemoryModuleType.POTENTIAL_JOB_SITE);
-					}
-					
-					protected void keepRunning(ServerWorld arg, SurinaEntity arg2, long l)
-					{
-						LookTargetUtil.walkTowards((LivingEntity)arg2, arg2.getBrain().getOptionalRegisteredMemory(MemoryModuleType.POTENTIAL_JOB_SITE).get().pos(), speed, 1);
-					}
-					
-					protected void finishRunning(ServerWorld arg, SurinaEntity arg2, long l)
-					{
-						Optional<GlobalPos> optional = arg2.getBrain().getOptionalRegisteredMemory(MemoryModuleType.POTENTIAL_JOB_SITE);
-						optional.ifPresent(pos -> {
-							BlockPos blockPos = pos.pos();
-							ServerWorld serverWorld = arg.getServer().getWorld(pos.dimension());
-							if (serverWorld == null) {
-								return;
-							}
-							PointOfInterestStorage pointOfInterestStorage = serverWorld.getPointOfInterestStorage();
-							if (pointOfInterestStorage.test(blockPos, poiType -> true)) {
-								pointOfInterestStorage.releaseTicket(blockPos);
-							}
-							DebugInfoSender.sendPointOfInterest(arg, blockPos);
-						});
-						arg2.getBrain().forget(MemoryModuleType.POTENTIAL_JOB_SITE);
-					}
-				};
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })

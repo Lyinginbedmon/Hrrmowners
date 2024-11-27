@@ -3,6 +3,7 @@ package com.lying.client.renderer.feature;
 import com.lying.client.init.HOModelLayerParts;
 import com.lying.client.model.SurinaEntityModel;
 import com.lying.entity.SurinaEntity;
+import com.lying.init.HOVillagerProfessions;
 import com.lying.reference.Reference;
 
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -27,7 +28,7 @@ public class SurinaCloakFeatureRenderer<T extends SurinaEntity> extends FeatureR
 	public void render(MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, T surinaEntity, float f, float g, float h, float j, float k, float l)
 	{
 		VillagerData data = surinaEntity.getVillagerData();
-		if(data.getProfession() == VillagerProfession.NONE)
+		if(data.getProfession() == VillagerProfession.NONE || data.getProfession() == HOVillagerProfessions.NEET.get())
 			return;
 		
 		SurinaEntityModel<T> contextModel = getContextModel();

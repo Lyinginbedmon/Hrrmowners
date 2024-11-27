@@ -8,8 +8,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.lying.entity.SurinaEntity;
 import com.lying.entity.ai.brain.task.ConstructVillagePartTask;
+import com.lying.entity.ai.brain.task.ProfessionTasks;
+import com.lying.entity.ai.brain.task.QueenWorkTask;
+import com.lying.entity.ai.brain.task.SurinaWorkTask;
 import com.lying.init.HOEntityTypes;
 import com.lying.init.HOMemoryModuleTypes;
+import com.lying.init.HOVillagerProfessions;
 import com.mojang.datafixers.util.Pair;
 
 import net.minecraft.entity.EntityType;
@@ -94,11 +98,12 @@ public class SurinaTaskListProvider
 		
 		tasks.add(Pair.of(5, WalkToNearestVisibleWantedItemTask.create(speed, false, 4)));
 		tasks.add(Pair.of(6, FindPointOfInterestTask.create(profession.acquirableWorkstation(), MemoryModuleType.JOB_SITE, MemoryModuleType.POTENTIAL_JOB_SITE, true, Optional.empty())));
-		tasks.add(Pair.of(7, SurinaBrainTasks.createWalkTowardsJobSite(speed)));
+		tasks.add(Pair.of(7, ProfessionTasks.createWalkTowardsJobSite(speed)));
+		tasks.add(Pair.of(8, ProfessionTasks.createTakeJobSite(speed, HOVillagerProfessions.NEET.get())));
 		tasks.add(Pair.of(10, FindPointOfInterestTask.create(poiType -> poiType.matchesKey(PointOfInterestTypes.HOME), MemoryModuleType.HOME, false, Optional.of((byte)14))));
 		tasks.add(Pair.of(10, FindPointOfInterestTask.create(poiType -> poiType.matchesKey(PointOfInterestTypes.MEETING), MemoryModuleType.MEETING_POINT, true, Optional.of((byte)14))));
-		tasks.add(Pair.of(10, SurinaBrainTasks.createGoToWork()));
-		tasks.add(Pair.of(10, SurinaBrainTasks.createLoseJobOnSiteLoss()));
+		tasks.add(Pair.of(10, ProfessionTasks.createGoToWork(HOVillagerProfessions.NEET.get())));
+		tasks.add(Pair.of(10, ProfessionTasks.createLoseJobOnSiteLoss(HOVillagerProfessions.NEET.get(), VillagerProfession.NITWIT)));
 		
 		return ImmutableList.copyOf(tasks);
 	}
@@ -122,10 +127,17 @@ public class SurinaTaskListProvider
 		 	 * Pair.of(3, new GiveGiftsToHeroTask(100)), 
 		 	 * Pair.of(99, ScheduleActivityTask.create()));
 		 */
-		// VillagerWorkTask villagerWorkTask = profession == VillagerProfession.FARMER ? new FarmerWorkTask() : new VillagerWorkTask();
+		SurinaWorkTask villagerWorkTask = new SurinaWorkTask();
+		if(profession == HOVillagerProfessions.QUEEN.get())
+			villagerWorkTask = new QueenWorkTask();
+		if(profession == VillagerProfession.FARMER)
+//			villagerWorkTask = new FarmerWorkTask()
+			;
+		
 		return ImmutableList.of(
 			SurinaBrainTasks.createBusyFollowTask(),
 			Pair.of(5, new RandomTask(ImmutableList.of(
+				Pair.of(villagerWorkTask, 7),
 				Pair.of(GoToIfNearbyTask.create(MemoryModuleType.JOB_SITE, JOB_WALKING_SPEED, 4), 2),
 				Pair.of(GoToNearbyPositionTask.create(MemoryModuleType.JOB_SITE, JOB_WALKING_SPEED, 1, 10), 5),
 				Pair.of(SurinaBrainTasks.createGoToSecondaryPosition(MemoryModuleType.SECONDARY_JOB_SITE, speed, 1, 6, MemoryModuleType.JOB_SITE), 5)

@@ -1,5 +1,7 @@
 package com.lying.entity.village.ai.action;
 
+import java.util.function.Predicate;
+
 import com.lying.entity.SurinaEntity;
 import com.lying.entity.village.Village;
 import com.lying.entity.village.VillageModel;
@@ -12,6 +14,9 @@ import net.minecraft.util.math.random.Random;
 
 public abstract class Action
 {
+	protected static final Predicate<SurinaEntity> IS_FUNCTIONAL = s -> s.isAlive() && !s.isAiDisabled() && !s.isRemoved();
+	protected static final Predicate<SurinaEntity> CAN_PERFORM_TASK = IS_FUNCTIONAL.and(s -> !s.hasHOATask() && s.canPerformHOATask());
+	
 	private final Identifier name;
 	private final float cost;
 	

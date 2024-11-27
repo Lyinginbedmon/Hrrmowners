@@ -43,7 +43,7 @@ public class ConstructVillagePartTask extends MultiTickTask<SurinaEntity>
 		super(ImmutableMap.of(
 				MemoryModuleType.CANT_REACH_WALK_TARGET_SINCE, MemoryModuleState.REGISTERED,
 				MemoryModuleType.PATH, MemoryModuleState.VALUE_ABSENT,
-				MemoryModuleType.WALK_TARGET, MemoryModuleState.VALUE_PRESENT), Reference.Values.TICKS_PER_SECOND * 5, 9999);
+				MemoryModuleType.WALK_TARGET, MemoryModuleState.VALUE_PRESENT), Reference.Values.TICKS_PER_SECOND * 5, Reference.Values.TICKS_PER_MINUTE * 5);
 		modulePos = posModule;
 		moduleDone = doneModule;
 		speed = walkSpeed;
@@ -122,9 +122,11 @@ public class ConstructVillagePartTask extends MultiTickTask<SurinaEntity>
 					entity.startAnimation(SurinaAnimation.BUILD_END);
 					
 					brain.remember(moduleDone, true);
-					if(!entity.pingVillage(target))
+					if(entity.pingVillage(target))
+					{
 						entity.markHOATaskCompleted();
-					setState(State.COMPLETE);
+						setState(State.COMPLETE);
+					}
 				}
 				break;
 			case COMPLETE:
@@ -149,7 +151,7 @@ public class ConstructVillagePartTask extends MultiTickTask<SurinaEntity>
 	
 	private void stop()
 	{
-		currentState = null;
+		setState(null);
 	}
 	
 	private static enum State

@@ -2,6 +2,7 @@ package com.lying.entity.village.ai.action;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 import com.lying.Hrrmowners;
 import com.lying.entity.SurinaEntity;
@@ -69,25 +70,31 @@ public class ActionPlacePart extends Action
 		if(partToAdd.isEmpty() || model.selectedConnector().isEmpty())
 			return Result.FAILURE;
 		
+		Hrrmowners.LOGGER.info("Updating place part action, in phase {}", phase.name());
 		BlockPos connector = model.selectedConnector().get().pos;
 		GlobalPos dest = new GlobalPos(world.getRegistryKey(), connector);
 		switch(phase)
 		{
 			case REQUEST:
 				// Find an available resident to supervise construction
-				// TODO Sort by proximity to target position
-				village.getResidentsMatching(s -> !s.hasHOATask() && s.canPerformHOATask()).stream().findFirst().ifPresent(r -> 
+				village.getResidentsMatching(CAN_PERFORM_TASK).stream().sorted((a,b) -> 
+				{
+					// Sort closest to destination point
+					double aDis = a.squaredDistanceTo(connector.getX() + 0.5D, connector.getY() + 0.5D, connector.getZ() + 0.5D);
+					double bDis = b.squaredDistanceTo(connector.getX() + 0.5D, connector.getY() + 0.5D, connector.getZ() + 0.5D);
+					return aDis < bDis ? -1 : aDis > bDis ? 1 : 0;
+				}).findFirst().ifPresent(r -> 
 				{
 					r.setHOATask(dest);
-					phase = Phase.WAIT;
+					setPhase(Phase.WAIT);
 				});
 				return Result.RUNNING;
 			case WAIT:
 				/**
 				 * If there are no residents acting on this task, return to requesting phase
 				 */
-				if(village.getResidentsMatching(s -> s.getHOATask() != dest).isEmpty())
-					phase = Phase.REQUEST;
+				if(village.getResidentsMatching(hasThisTask(dest)).isEmpty())
+					setPhase(Phase.REQUEST);
 				
 				return Result.RUNNING;
 			case PINGED:
@@ -98,6 +105,20 @@ public class ActionPlacePart extends Action
 		}
 	}
 	
+	private static Predicate<SurinaEntity> hasThisTask(GlobalPos pos)
+	{
+		return IS_FUNCTIONAL.and(r -> r.hasHOATask(pos));
+	}
+	
+	private void setPhase(Phase phaseIn)
+	{
+		String move = "progressing";
+		if(phaseIn.ordinal() < phase.ordinal())
+			move = "regressing";
+		phase = phaseIn;
+		Hrrmowners.LOGGER.info(" # Action {} to {} phase", move, phase.name());
+	}
+	
 	public boolean acceptPing(BlockPos target, SurinaEntity resident, VillageModel model)
 	{
 		if(target.getSquaredDistance(model.selectedConnector().get().pos) > 1 || phase != Phase.WAIT || !resident.hasFinishedHOATask())
@@ -106,7 +127,7 @@ public class ActionPlacePart extends Action
 		resident.markHOATaskCompleted();
 		model.addPart(partToAdd.get(), (ServerWorld)resident.getWorld(), true);
 		partToAdd.get().placeInWorld((ServerWorld)resident.getWorld());
-		phase = Phase.PINGED;
+		setPhase(Phase.PINGED);
 		return true;
 	}
 	

@@ -35,6 +35,7 @@ public class SurinaEntityModel<T extends SurinaEntity> extends SinglePartEntityM
 	public ArmPose rightArmPose = ArmPose.EMPTY;
 	public boolean sneaking;
 	public float leaningPitch;
+	public boolean isSitting = false;
 	
 	protected final ModelPart[] limbs;
 	
@@ -133,6 +134,9 @@ public class SurinaEntityModel<T extends SurinaEntity> extends SinglePartEntityM
 			this.updateAnimation(entity.getAnimation(SurinaAnimation.BUILD_MAIN), SurinaAnimations.build_main, entity.age);
 			this.updateAnimation(entity.getAnimation(SurinaAnimation.BUILD_END), SurinaAnimations.build_end, entity.age);
 		}
+		
+		if(isSitting)
+			root.pivotY += 12.5F;
 	}
 	
 	private void doIdleAnimation(T entity, float limbSwing, float limbSwingAmount, float ageInTicks, float headYaw, float headPitch)
@@ -166,10 +170,10 @@ public class SurinaEntityModel<T extends SurinaEntity> extends SinglePartEntityM
 		{
 			this.rightArm.pitch += -0.62831855f;
 			this.leftArm.pitch += -0.62831855f;
-			this.rightLeg.pitch = -1.4137167f;
+			this.rightLeg.pitch = -(float)Math.toRadians(71D);
 			this.rightLeg.yaw = 0.31415927f;
 			this.rightLeg.roll = 0.07853982f;
-			this.leftLeg.pitch = -1.4137167f;
+			this.leftLeg.pitch = -(float)Math.toRadians(71D);
 			this.leftLeg.yaw = -0.31415927f;
 			this.leftLeg.roll = -0.07853982f;
 		}
