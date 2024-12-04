@@ -7,12 +7,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.lying.entity.SurinaEntity;
-import com.lying.entity.ai.brain.task.ConstructVillagePartTask;
+import com.lying.entity.ai.brain.task.DoHOATask;
 import com.lying.entity.ai.brain.task.ProfessionTasks;
 import com.lying.entity.ai.brain.task.QueenWorkTask;
 import com.lying.entity.ai.brain.task.SurinaWorkTask;
 import com.lying.init.HOEntityTypes;
-import com.lying.init.HOMemoryModuleTypes;
 import com.lying.init.HOVillagerProfessions;
 import com.mojang.datafixers.util.Pair;
 
@@ -93,7 +92,8 @@ public class SurinaTaskListProvider
 		tasks.add(Pair.of(0, StartRaidTask.create()));
 		tasks.add(Pair.of(0, ForgetCompletedPointOfInterestTask.create(profession.heldWorkstation(), MemoryModuleType.JOB_SITE)));
 		tasks.add(Pair.of(0, ForgetCompletedPointOfInterestTask.create(profession.acquirableWorkstation(), MemoryModuleType.POTENTIAL_JOB_SITE)));
-		tasks.add(Pair.of(0, new ConstructVillagePartTask(HOMemoryModuleTypes.HOA_TASK.get(), HOMemoryModuleTypes.HOA_TASK_DONE.get(), 1.0F, 64)));
+		tasks.add(Pair.of(0, DoHOATask.createGoToHOATask()));
+		tasks.add(Pair.of(0, new DoHOATask(1)));
 		tasks.add(Pair.of(1, new WanderAroundTask()));
 		
 		tasks.add(Pair.of(5, WalkToNearestVisibleWantedItemTask.create(speed, false, 4)));

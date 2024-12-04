@@ -14,7 +14,7 @@ import net.minecraft.util.math.random.Random;
 
 public abstract class Action
 {
-	protected static final Predicate<SurinaEntity> IS_FUNCTIONAL = s -> s.isAlive() && !s.isAiDisabled() && !s.isRemoved();
+	protected static final Predicate<SurinaEntity> IS_FUNCTIONAL = s -> s.isAlive() && !s.isAiDisabled() && !s.isRemoved() && !s.isBaby();
 	protected static final Predicate<SurinaEntity> CAN_PERFORM_TASK = IS_FUNCTIONAL.and(s -> !s.hasHOATask() && s.canPerformHOATask());
 	
 	private final Identifier name;

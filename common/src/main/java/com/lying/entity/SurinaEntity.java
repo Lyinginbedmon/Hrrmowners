@@ -288,9 +288,13 @@ public class SurinaEntity extends MerchantEntity implements IVillager
 		LOGGER.info(" * Resident supervision requested at {}, success {}", posIn.pos().toShortString(), hasHOATask());
 	}
 	
-	public boolean canPerformHOATask() { return isAlive() && !isAiDisabled() && !isBaby() && !hasHOATask() && getVillagerData().getProfession() != HOVillagerProfessions.QUEEN.get(); }
+	public boolean canPerformHOATask() { return !hasHOATask() && !hasFinishedHOATask() && getVillagerData().getProfession() != HOVillagerProfessions.QUEEN.get(); }
 	
-	public boolean hasHOATask() { return this.brain.getOptionalMemory(HOMemoryModuleTypes.HOA_TASK.get()).isPresent(); }
+	public boolean hasHOATask()
+	{
+		Optional<GlobalPos> memory = this.brain.getOptionalMemory(HOMemoryModuleTypes.HOA_TASK.get());
+		return memory.isPresent() && memory.get() != null;
+	}
 	
 	public boolean hasHOATask(GlobalPos pos)
 	{
@@ -308,9 +312,9 @@ public class SurinaEntity extends MerchantEntity implements IVillager
 	
 	public void markHOATaskCompleted()
 	{
-		LOGGER.info(" * Resident HOA task completed");
 		this.brain.forget(HOMemoryModuleTypes.HOA_TASK.get());
 		this.brain.forget(HOMemoryModuleTypes.HOA_TASK_DONE.get());
+		LOGGER.info(" * Resident HOA task completed, success {}", !hasFinishedHOATask());
 	}
 	
 	public boolean isSitting()

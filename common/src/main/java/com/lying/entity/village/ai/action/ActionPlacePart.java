@@ -105,6 +105,7 @@ public class ActionPlacePart extends Action
 		}
 	}
 	
+	/** Returns true if a given SurinaEntity is functional and has an HOA task matching this position */
 	private static Predicate<SurinaEntity> hasThisTask(GlobalPos pos)
 	{
 		return IS_FUNCTIONAL.and(r -> r.hasHOATask(pos));
@@ -121,7 +122,7 @@ public class ActionPlacePart extends Action
 	
 	public boolean acceptPing(BlockPos target, SurinaEntity resident, VillageModel model)
 	{
-		if(target.getSquaredDistance(model.selectedConnector().get().pos) > 1 || phase != Phase.WAIT || !resident.hasFinishedHOATask())
+		if(phase != Phase.WAIT)
 			return false;
 		
 		resident.markHOATaskCompleted();
