@@ -4,8 +4,8 @@ import java.util.Optional;
 
 import org.jetbrains.annotations.Nullable;
 
-import com.lying.entity.village.VillagePartType;
-import com.lying.init.HOVillagePartTypes;
+import com.lying.entity.village.VillagePart;
+import com.lying.init.HOVillageParts;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.block.JigsawBlock;
@@ -54,17 +54,17 @@ public class Connector
 	}
 	
 	/** Returns the PartType that this connector primarily connects to */
-	public VillagePartType type() { return HOVillagePartTypes.byID(partID); }
+	public VillagePart type() { return HOVillageParts.byID(partID); }
 	
 	/** Returns true if this connector can connect to a recipient connector for the given type(s) */
-	public boolean canLinkTo(VillagePartType... set)
+	public boolean canLinkTo(VillagePart... set)
 	{
-		VillagePartType type = type();
+		VillagePart type = type();
 		if(type == null)
 			return true;
 		
-		for(VillagePartType t : set)
-			if(t == null || type.canConnectTo(t))
+		for(VillagePart t : set)
+			if(t == null || type.group().canConnectTo(t.group()))
 				return true;
 		return false;
 	}

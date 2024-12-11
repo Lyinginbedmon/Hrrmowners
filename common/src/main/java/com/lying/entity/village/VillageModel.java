@@ -41,7 +41,7 @@ public class VillageModel
 	private int totalPop = 0;
 	
 	/** A set of VillagePart reflecting the layout of the village */
-	private final List<VillagePart> parts = Lists.newArrayList();
+	private final List<VillagePartInstance> parts = Lists.newArrayList();
 	
 	/** A cached list of all unoccupied connection points, as defined by jigsaw blocks*/
 	private final List<Connector> connectors = Lists.newArrayList();
@@ -111,7 +111,7 @@ public class VillageModel
 		List<T> residents = Lists.newArrayList();
 		
 		// Collect unique entities within the boundaries of this village's component parts
-		for(VillagePart part : parts)
+		for(VillagePartInstance part : parts)
 			residents.addAll(
 				world.getEntitiesByClass(resClass, part.bounds().expand(expansion), Entity::isAlive).stream()
 					.filter(l -> residents.stream().noneMatch(l2 -> l.getUuid().equals(l2.getUuid()))).toList());
@@ -171,7 +171,7 @@ public class VillageModel
 		{
 			NbtList components = nbt.getList("Parts", NbtElement.COMPOUND_TYPE);
 			for(int i=0; i<components.size(); i++)
-				VillagePart.readFromNbt(components.getCompound(i), world).ifPresent(p -> {
+				VillagePartInstance.readFromNbt(components.getCompound(i), world).ifPresent(p -> {
 					parts.add(p);
 					tally.put(p.type.registryName(), tally.getOrDefault(p.type.registryName(), 0) + 1);
 				});
@@ -198,7 +198,7 @@ public class VillageModel
 		return this;
 	}
 	
-	public List<VillagePart> parts() { return parts; }
+	public List<VillagePartInstance> parts() { return parts; }
 	
 	public List<Connector> connectors() { return connectors; }
 	
@@ -213,7 +213,12 @@ public class VillageModel
 	
 	public void incSelectedConnector() { connectorIndex++; }
 	
-	public int getTallyOf(VillagePartType type) { return tally.getOrDefault(type.registryName(), 0); }
+	public int getTallyOf(VillagePart type) { return tally.getOrDefault(type.registryName(), 0); }
+	
+	public int getTallyMatching(Predicate<VillagePartInstance> predicate)
+	{
+		return (int)parts.stream().filter(predicate).count();
+	}
 	
 	public boolean isEmpty() { return parts.isEmpty(); }
 	
@@ -222,18 +227,18 @@ public class VillageModel
 	
 	public boolean contains(BlockPos pos) { return parts.stream().anyMatch(part -> part.contains(pos)); }
 	
-	public List<VillagePart> getContainers(BlockPos pos) { return parts.stream().filter(part -> part.contains(pos)).toList(); }
+	public List<VillagePartInstance> getContainers(BlockPos pos) { return parts.stream().filter(part -> part.contains(pos)).toList(); }
 	
-	public boolean wouldIntersect(VillagePart part) { return parts.stream().anyMatch(part2 -> part2.intersects(part)); }
+	public boolean wouldIntersect(VillagePartInstance part) { return parts.stream().anyMatch(part2 -> part2.intersects(part)); }
 	
-	public Optional<VillagePart> getCenter() { return parts.stream().findFirst(); }
+	public Optional<VillagePartInstance> getCenter() { return parts.stream().findFirst(); }
 	
-	public Optional<VillagePart> getPart(UUID id)
+	public Optional<VillagePartInstance> getPart(UUID id)
 	{
 		return parts.stream().filter(part -> part.id.equals(id)).findFirst();
 	}
 	
-	public boolean addPart(VillagePart part, ServerWorld world, boolean shouldNotify)
+	public boolean addPart(VillagePartInstance part, ServerWorld world, boolean shouldNotify)
 	{
 		if(parts.stream().anyMatch(part2 -> part2.id.equals(part.id) || part2.bounds().intersects(part.bounds())))
 			return false;
@@ -272,7 +277,7 @@ public class VillageModel
 	public void recacheConnectors(boolean shouldNotify)
 	{
 		connectors.clear();
-		for(VillagePart part : parts)
+		for(VillagePartInstance part : parts)
 		{
 			List<Connector> remove = Lists.newArrayList();
 			for(Connector connector : part.openConnections())
@@ -284,7 +289,7 @@ public class VillageModel
 		}
 	}
 	
-	public void erasePart(VillagePart part, ServerWorld world, RegistryKey<World> dimension)
+	public void erasePart(VillagePartInstance part, ServerWorld world, RegistryKey<World> dimension)
 	{
 		List<DebugCuboid> comps = Lists.newArrayList();
 		part.collectDebugCuboids(comps);

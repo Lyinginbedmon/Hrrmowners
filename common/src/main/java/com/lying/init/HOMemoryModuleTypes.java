@@ -19,8 +19,7 @@ public class HOMemoryModuleTypes
 	private static int tally = 0;
 	
 	public static final RegistrySupplier<MemoryModuleType<GlobalPos>> HOA_TASK	= register("hoa_task", GlobalPos.CODEC);
-	public static final RegistrySupplier<MemoryModuleType<Boolean>> HOA_TASK_DONE	= register("hoa_task_done", Codec.BOOL);
-
+	
 	private static <T> RegistrySupplier<MemoryModuleType<T>> register(String nameIn, Codec<T> codecIn)
 	{
 		return register(nameIn, () -> new MemoryModuleType<T>(Optional.of(codecIn)));

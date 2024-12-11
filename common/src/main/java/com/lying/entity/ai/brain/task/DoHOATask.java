@@ -23,9 +23,6 @@ import net.minecraft.util.math.GlobalPos;
 
 public class DoHOATask extends MultiTickTask<SurinaEntity>
 {
-	private static final MemoryModuleType<GlobalPos> POSITION = HOMemoryModuleTypes.HOA_TASK.get();
-	private static final MemoryModuleType<Boolean> FLAG = HOMemoryModuleTypes.HOA_TASK_DONE.get();
-	
 	/** Duration of the build_start animation */
 	private static final int START_TIME = (int)(Reference.Values.TICKS_PER_SECOND * 0.5417F);
 	/* Duration of the build_end animation */
@@ -34,22 +31,20 @@ public class DoHOATask extends MultiTickTask<SurinaEntity>
 	private static final int TOTAL_TIME = Reference.Values.TICKS_PER_SECOND * 5;
 	
 	private final int maxDistance;
-	
+	private Phase prevPhase;
+	private int ticksRunning = 0;
 	private BlockPos target;
-	private int ticksInState = 0;
 	
 	public DoHOATask(int maxDist)
 	{
-		super(ImmutableMap.of(
-				POSITION, MemoryModuleState.VALUE_PRESENT,
-				FLAG, MemoryModuleState.VALUE_ABSENT), TOTAL_TIME);
+		super(ImmutableMap.of(HOMemoryModuleTypes.HOA_TASK.get(), MemoryModuleState.VALUE_PRESENT), TOTAL_TIME);
 		maxDistance = maxDist;
 	}
 	
 	protected boolean shouldRun(ServerWorld world, SurinaEntity entity)
 	{
-		Optional<GlobalPos> dest = entity.getBrain().getOptionalMemory(POSITION);
-		if(dest.isEmpty() || world.getRegistryKey() != dest.get().dimension() || !(target = dest.get().pos()).isWithinDistance(entity.getPos(), (double)maxDistance))
+		GlobalPos dest = entity.getTaskManager().getHOATask();
+		if(world.getRegistryKey() != dest.dimension() || !(target = dest.pos()).isWithinDistance(entity.getPos(), (double)maxDistance))
 			return false;
 		
 		return true;
@@ -60,15 +55,17 @@ public class DoHOATask extends MultiTickTask<SurinaEntity>
 	protected void run(ServerWorld world, SurinaEntity entity, long time)
 	{
 		entity.startAnimation(SurinaAnimation.BUILD_START);
+		prevPhase = null;
+		ticksRunning = 0;
 	}
 	
 	protected void keepRunning(ServerWorld world, SurinaEntity entity, long time)
 	{
 		EntityNavigation navigator = entity.getNavigation();
-		++ticksInState;
 		navigator.stop();
 		
-		switch(Phase.fromTicks(ticksInState))
+		Phase phase = Phase.fromTicks(++ticksRunning);
+		switch(phase)
 		{
 			case START:
 				entity.startAnimation(SurinaAnimation.BUILD_START);
@@ -82,20 +79,20 @@ public class DoHOATask extends MultiTickTask<SurinaEntity>
 				break;
 			case END:
 				entity.startAnimation(SurinaAnimation.BUILD_END);
-				entity.pingVillage(target);
-//				if(entity.pingVillage(target))
-//					entity.markHOATaskCompleted();
+				if(prevPhase != Phase.END)
+					entity.pingVillage(target);
 				break;
 		}
+		prevPhase = phase;
 	}
 	
 	protected void finishRunning(ServerWorld world, SurinaEntity entity, long time) { entity.startAnimation(SurinaAnimation.IDLE); }
 	
 	private static enum Phase
 	{
-		START(0, START_TIME),
+		START(-9999, START_TIME),
 		MAIN(START_TIME, TOTAL_TIME - END_TIME),
-		END(END_TIME, TOTAL_TIME);
+		END(END_TIME, 9999);
 		
 		private final int start, end;
 		
@@ -110,19 +107,22 @@ public class DoHOATask extends MultiTickTask<SurinaEntity>
 			for(Phase phase : values())
 				if(time >= phase.start && time < phase.end)
 					return phase;
-			return START;
+			return END;
 		}
 	}
 	
 	// Make the mob go to the position it needs to do something at
 	public static Task<SurinaEntity> createGoToHOATask()
 	{
-		return TaskTriggerer.task(context -> context.group(context.queryMemoryValue(HOMemoryModuleTypes.HOA_TASK.get()), context.queryMemoryOptional(MemoryModuleType.WALK_TARGET)).apply(context, (target, walk) -> (world, entity, time) -> {
-			GlobalPos pos = context.getValue(target);
+		return TaskTriggerer.task(context -> context.group(context.queryMemoryValue(HOMemoryModuleTypes.HOA_TASK.get()), context.queryMemoryOptional(MemoryModuleType.WALK_TARGET)).apply(context, (task, walk) -> (world, entity, time) -> {
+			if(!entity.getTaskManager().hasHOATask())
+				return false;
+			
+			GlobalPos pos = context.getValue(task);
 			if(entity.getBlockPos().isWithinDistance(pos.pos(), 2D))
 				return false;
 			
-			walk.remember(Optional.of(new WalkTarget(pos.pos(), 1, 1)));
+			walk.remember(Optional.of(new WalkTarget(pos.pos(), 0.5F, 1)));
 			return true;
 		}));
 	}

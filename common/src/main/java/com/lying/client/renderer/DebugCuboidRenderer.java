@@ -56,7 +56,7 @@ public class DebugCuboidRenderer
 		BlockPos min = comp.min();
 		BlockPos max = comp.max();
 		
-		Vector3f colour = decimalToVector(comp.type().color());
+		Vector3f colour = decimalToVector(comp.type().group().color());
 		
 		Vec3d minVec = new Vec3d(min.getX(), min.getY(), min.getZ()).subtract(cameraPos);
 		Vec3d maxVec = new Vec3d(max.getX() + 1, max.getY() + 1, max.getZ() + 1).subtract(cameraPos);

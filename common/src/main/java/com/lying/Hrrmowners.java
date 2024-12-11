@@ -15,7 +15,8 @@ import com.lying.init.HOEntityTypes;
 import com.lying.init.HOItems;
 import com.lying.init.HOMemoryModuleTypes;
 import com.lying.init.HOPointOfInterestTypes;
-import com.lying.init.HOVillagePartTypes;
+import com.lying.init.HOVillagePartGroups;
+import com.lying.init.HOVillageParts;
 import com.lying.init.HOVillagerProfessions;
 import com.lying.reference.Reference;
 import com.lying.utility.ServerBus;
@@ -68,7 +69,8 @@ public final class Hrrmowners
     	HOItems.init();
     	HOPointOfInterestTypes.init();
     	HOVillagerProfessions.init();
-    	HOVillagePartTypes.init();
+    	HOVillagePartGroups.init();
+    	HOVillageParts.init();
     }
     
     public static void forAllPlayers(Consumer<ServerPlayerEntity> consumer) { PLAYERS.forEach(player -> consumer.accept(player)); }

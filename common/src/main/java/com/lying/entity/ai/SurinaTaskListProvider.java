@@ -93,7 +93,7 @@ public class SurinaTaskListProvider
 		tasks.add(Pair.of(0, ForgetCompletedPointOfInterestTask.create(profession.heldWorkstation(), MemoryModuleType.JOB_SITE)));
 		tasks.add(Pair.of(0, ForgetCompletedPointOfInterestTask.create(profession.acquirableWorkstation(), MemoryModuleType.POTENTIAL_JOB_SITE)));
 		tasks.add(Pair.of(0, DoHOATask.createGoToHOATask()));
-		tasks.add(Pair.of(0, new DoHOATask(1)));
+		tasks.add(Pair.of(0, new DoHOATask(2)));
 		tasks.add(Pair.of(1, new WanderAroundTask()));
 		
 		tasks.add(Pair.of(5, WalkToNearestVisibleWantedItemTask.create(speed, false, 4)));

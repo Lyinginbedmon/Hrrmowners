@@ -62,6 +62,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
@@ -78,7 +79,7 @@ import net.minecraft.world.poi.PointOfInterestTypes;
 
 public class SurinaEntity extends MerchantEntity implements IVillager
 {
-	private static final Logger LOGGER = Hrrmowners.LOGGER;
+	static final Logger LOGGER = Hrrmowners.LOGGER;
 	private static final TrackedData<VillagerData> VILLAGER_DATA = DataTracker.registerData(SurinaEntity.class, TrackedDataHandlerRegistry.VILLAGER_DATA);
 	private static final TrackedData<Integer> ANIMATION = DataTracker.registerData(SurinaEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private static final TrackedData<Optional<UUID>> VILLAGE_ID	= DataTracker.registerData(SurinaEntity.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
@@ -115,13 +116,13 @@ public class SurinaEntity extends MerchantEntity implements IVillager
 				MemoryModuleType.LAST_WOKEN, 
 				MemoryModuleType.LAST_WORKED_AT_POI, 
 				MemoryModuleType.GOLEM_DETECTED_RECENTLY, 
-				HOMemoryModuleTypes.HOA_TASK.get(),
-				HOMemoryModuleTypes.HOA_TASK_DONE.get()});
+				HOMemoryModuleTypes.HOA_TASK.get()});
 	private static final ImmutableList<SensorType<? extends Sensor<? super SurinaEntity>>> SENSORS = ImmutableList.of(SensorType.NEAREST_LIVING_ENTITIES, SensorType.NEAREST_PLAYERS, SensorType.NEAREST_ITEMS, SensorType.NEAREST_BED, SensorType.HURT_BY, SensorType.VILLAGER_HOSTILES, SensorType.VILLAGER_BABIES, SensorType.GOLEM_DETECTED);
 	public static final Map<MemoryModuleType<GlobalPos>, BiPredicate<SurinaEntity, RegistryEntry<PointOfInterestType>>> POINTS_OF_INTEREST = ImmutableMap.of(MemoryModuleType.HOME, (villager, arg2) -> arg2.matchesKey(PointOfInterestTypes.HOME), MemoryModuleType.JOB_SITE, (villager, arg2) -> villager.getVillagerData().getProfession().heldWorkstation().test((RegistryEntry<PointOfInterestType>)arg2), MemoryModuleType.POTENTIAL_JOB_SITE, (villager, arg2) -> HOVillagerProfessions.IS_SURINA_JOB_SITE.test((RegistryEntry<PointOfInterestType>)arg2), MemoryModuleType.MEETING_POINT, (villager, arg2) -> arg2.matchesKey(PointOfInterestTypes.MEETING));
 	private boolean natural;
 	
 	protected static final EntityDimensions SITTING_DIMENSIONS = EntityDimensions.fixed((float)0.6f, (float)1.25f);
+	protected final HOATaskManager taskManager = new HOATaskManager(this);
 	
 	public final Map<SurinaAnimation, AnimationState> ANIM_MAP = Map.of(
 			SurinaAnimation.IDLE, new AnimationState(),
@@ -129,12 +130,18 @@ public class SurinaEntity extends MerchantEntity implements IVillager
 			SurinaAnimation.BUILD_MAIN, new AnimationState(),
 			SurinaAnimation.BUILD_END, new AnimationState());
 	
+	private static final String[] NAMES = new String[] {
+			"Viktor", "Jayce", "Powder", "Violet", "Vander", "Silco", "Mel", "Heimerdinger", "Sevika", "Caitlyn", "Ekko", "Ambessa", "Singed", "Lest"
+		};
+	
 	public SurinaEntity(EntityType<? extends MerchantEntity> entityType, World world)
 	{
 		super(entityType, world);
 		((MobNavigation)getNavigation()).setCanPathThroughDoors(true);
 		getNavigation().setCanSwim(true);
 		setVillagerData(getVillagerData().withType(VillagerType.DESERT).withProfession(HOVillagerProfessions.NEET.get()));
+		
+		setCustomName(Text.literal(NAMES[random.nextInt(NAMES.length)]));
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -282,40 +289,7 @@ public class SurinaEntity extends MerchantEntity implements IVillager
 		return false;
 	}
 	
-	public void setHOATask(GlobalPos posIn)
-	{
-		this.brain.remember(HOMemoryModuleTypes.HOA_TASK.get(), posIn);
-		LOGGER.info(" * Resident supervision requested at {}, success {}", posIn.pos().toShortString(), hasHOATask());
-	}
-	
-	public boolean canPerformHOATask() { return !hasHOATask() && !hasFinishedHOATask() && getVillagerData().getProfession() != HOVillagerProfessions.QUEEN.get(); }
-	
-	public boolean hasHOATask()
-	{
-		Optional<GlobalPos> memory = this.brain.getOptionalMemory(HOMemoryModuleTypes.HOA_TASK.get());
-		return memory.isPresent() && memory.get() != null;
-	}
-	
-	public boolean hasHOATask(GlobalPos pos)
-	{
-		if(hasHOATask())
-		{
-			GlobalPos target = getHOATask();
-			return target.dimension() == pos.dimension() && target.pos().getSquaredDistance(pos.pos()) < 1D;
-		}
-		return false;
-	}
-	
-	public GlobalPos getHOATask() { return this.brain.getOptionalMemory(HOMemoryModuleTypes.HOA_TASK.get()).orElse(null); }
-	
-	public boolean hasFinishedHOATask() { return isAlive() && this.brain.getOptionalMemory(HOMemoryModuleTypes.HOA_TASK_DONE.get()).orElse(false); }
-	
-	public void markHOATaskCompleted()
-	{
-		this.brain.forget(HOMemoryModuleTypes.HOA_TASK.get());
-		this.brain.forget(HOMemoryModuleTypes.HOA_TASK_DONE.get());
-		LOGGER.info(" * Resident HOA task completed, success {}", !hasFinishedHOATask());
-	}
+	public HOATaskManager getTaskManager() { return this.taskManager; }
 	
 	public boolean isSitting()
 	{

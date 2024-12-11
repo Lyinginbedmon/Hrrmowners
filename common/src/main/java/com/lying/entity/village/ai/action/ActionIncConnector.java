@@ -7,9 +7,9 @@ import net.minecraft.server.world.ServerWorld;
 
 public class ActionIncConnector extends Action 
 {
-	public ActionIncConnector()
+	public ActionIncConnector(float cost)
 	{
-		super(Reference.ModInfo.prefix("increment_connector"), 0.3F);
+		super(Reference.ModInfo.prefix("increment_connector"), cost);
 	}
 	
 	public boolean canTakeAction(VillageModel model) { return !model.cannotExpand() && model.connectors().size() > 1; }
@@ -20,5 +20,5 @@ public class ActionIncConnector extends Action
 		return true;
 	}
 	
-	protected Action makeCopy() { return new ActionIncConnector(); }
+	protected Action makeCopy() { return new ActionIncConnector(cost()); }
 }

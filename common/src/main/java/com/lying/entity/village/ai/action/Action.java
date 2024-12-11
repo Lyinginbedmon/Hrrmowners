@@ -15,7 +15,7 @@ import net.minecraft.util.math.random.Random;
 public abstract class Action
 {
 	protected static final Predicate<SurinaEntity> IS_FUNCTIONAL = s -> s.isAlive() && !s.isAiDisabled() && !s.isRemoved() && !s.isBaby();
-	protected static final Predicate<SurinaEntity> CAN_PERFORM_TASK = IS_FUNCTIONAL.and(s -> !s.hasHOATask() && s.canPerformHOATask());
+	protected static final Predicate<SurinaEntity> CAN_PERFORM_TASK = IS_FUNCTIONAL.and(s -> s.getTaskManager().canPerformHOATask());
 	
 	private final Identifier name;
 	private final float cost;
@@ -28,7 +28,7 @@ public abstract class Action
 	protected Action(Identifier nameIn, float costIn)
 	{
 		name = nameIn;
-		cost = costIn;
+		cost = Math.abs(costIn);
 	}
 	
 	public Identifier registryName() { return name; }

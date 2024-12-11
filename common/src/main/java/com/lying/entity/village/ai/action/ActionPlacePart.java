@@ -4,12 +4,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 
+import org.slf4j.Logger;
+
 import com.lying.Hrrmowners;
 import com.lying.entity.SurinaEntity;
 import com.lying.entity.village.Village;
 import com.lying.entity.village.VillageModel;
+import com.lying.entity.village.VillagePartInstance;
 import com.lying.entity.village.VillagePart;
-import com.lying.entity.village.VillagePartType;
 import com.lying.entity.village.ai.Connector;
 import com.lying.reference.Reference;
 
@@ -30,20 +32,22 @@ import net.minecraft.world.biome.Biome;
 
 public class ActionPlacePart extends Action
 {
-	private final VillagePartType type;
+	public static final Logger LOGGER = Hrrmowners.LOGGER;
+	
+	private final VillagePart type;
 	private final RegistryKey<Biome> style;
 	
 	private final RegistryKey<StructurePool> poolKey;
 	
-	private Optional<VillagePart> partToAdd = Optional.empty();
+	private Optional<VillagePartInstance> partToAdd = Optional.empty();
 	private Phase phase = Phase.REQUEST;
 	
-	public ActionPlacePart(VillagePartType typeIn, RegistryKey<Biome> styleIn)
+	public ActionPlacePart(VillagePart typeIn, RegistryKey<Biome> styleIn)
 	{
 		this(typeIn, styleIn, Optional.empty());
 	}
 	
-	public ActionPlacePart(VillagePartType typeIn, RegistryKey<Biome> styleIn, Optional<VillagePart> partIn)
+	public ActionPlacePart(VillagePart typeIn, RegistryKey<Biome> styleIn, Optional<VillagePartInstance> partIn)
 	{
 		super(Identifier.of(Reference.ModInfo.MOD_ID, "place_"+typeIn.asString()), typeIn.costToBuild());
 		type = typeIn;
@@ -70,7 +74,7 @@ public class ActionPlacePart extends Action
 		if(partToAdd.isEmpty() || model.selectedConnector().isEmpty())
 			return Result.FAILURE;
 		
-		Hrrmowners.LOGGER.info("Updating place part action, in phase {}", phase.name());
+//		LOGGER.info("{} Updating place part action, in phase {}", world.isClient() ? "CLIENT" : "SERVER", phase.name());
 		BlockPos connector = model.selectedConnector().get().pos;
 		GlobalPos dest = new GlobalPos(world.getRegistryKey(), connector);
 		switch(phase)
@@ -85,8 +89,8 @@ public class ActionPlacePart extends Action
 					return aDis < bDis ? -1 : aDis > bDis ? 1 : 0;
 				}).findFirst().ifPresent(r -> 
 				{
-					r.setHOATask(dest);
-					setPhase(Phase.WAIT);
+					if(r.getTaskManager().setHOATask(dest))
+						setPhase(Phase.WAIT);
 				});
 				return Result.RUNNING;
 			case WAIT:
@@ -108,16 +112,13 @@ public class ActionPlacePart extends Action
 	/** Returns true if a given SurinaEntity is functional and has an HOA task matching this position */
 	private static Predicate<SurinaEntity> hasThisTask(GlobalPos pos)
 	{
-		return IS_FUNCTIONAL.and(r -> r.hasHOATask(pos));
+		return IS_FUNCTIONAL.and(r -> r.getTaskManager().hasHOATaskAt(pos));
 	}
 	
 	private void setPhase(Phase phaseIn)
 	{
-		String move = "progressing";
-		if(phaseIn.ordinal() < phase.ordinal())
-			move = "regressing";
+//		LOGGER.info(" # Action {} to {} phase", phaseIn.ordinal() < phase.ordinal() ? "regressing" : "progressing", phase.name());
 		phase = phaseIn;
-		Hrrmowners.LOGGER.info(" # Action {} to {} phase", move, phase.name());
 	}
 	
 	public boolean acceptPing(BlockPos target, SurinaEntity resident, VillageModel model)
@@ -125,27 +126,33 @@ public class ActionPlacePart extends Action
 		if(phase != Phase.WAIT)
 			return false;
 		
-		resident.markHOATaskCompleted();
+		resident.getTaskManager().markHOATaskCompleted();
 		model.addPart(partToAdd.get(), (ServerWorld)resident.getWorld(), true);
 		partToAdd.get().placeInWorld((ServerWorld)resident.getWorld());
 		setPhase(Phase.PINGED);
 		return true;
 	}
 	
-	private Optional<VillagePart> getSuitablePart(VillageModel model, ServerWorld world)
+	private Optional<VillagePartInstance> getSuitablePart(VillageModel model, ServerWorld world)
 	{
 		resetRand();
 		BlockRotation[] rotations = BlockRotation.values();
 		BlockRotation baseRotation = rotations[rand.nextInt(rotations.length)];
+		Optional<Connector> connectOpt = model.selectedConnector();
+		if(connectOpt.isEmpty())
+		{
+			LOGGER.error("Place part action checked after canTakeAction returned true, but no connector selected");
+			return Optional.empty();
+		}
 		
-		Connector connector = model.selectedConnector().get();
+		Connector connector = connectOpt.get();
 		DynamicRegistryManager registryManager = world.getRegistryManager();
 		Registry<StructurePool> registry = registryManager.get(RegistryKeys.TEMPLATE_POOL);
 		StructurePoolAliasLookup aliasLookup = StructurePoolAliasLookup.create(List.of(), connector.linkPos(), world.getSeed());
 		Optional<StructurePool> optPool = Optional.of(poolKey).flatMap(key -> registry.getOrEmpty(aliasLookup.lookup(key)));
 		if(optPool.isEmpty())
 		{
-			Hrrmowners.LOGGER.error("Structure pool {} is empty", poolKey.getValue().toString());
+			LOGGER.error("Structure pool {} is empty", poolKey.getValue().toString());
 			return Optional.empty();
 		}
 		
@@ -158,8 +165,8 @@ public class ActionPlacePart extends Action
 			for(int i=0; i<rotations.length; i++)
 			{
 				BlockRotation rotation = rotations[(baseRotation.ordinal() + i)%rotations.length];
-				Optional<VillagePart> partOpt = Village.makeNewPart(option, type, connector.linkPos(), rotation, world.getStructureTemplateManager());
-				VillagePart part = partOpt.get();
+				Optional<VillagePartInstance> partOpt = Village.makeNewPart(option, type, connector.linkPos(), rotation, world.getStructureTemplateManager());
+				VillagePartInstance part = partOpt.get();
 				
 				Optional<BlockPos> connectOffset = part.getOffsetToLinkTo(connector);
 				if(connectOffset.isPresent())

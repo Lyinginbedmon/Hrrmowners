@@ -15,7 +15,7 @@ import com.lying.block.entity.NestBlockEntity;
 import com.lying.entity.SurinaEntity;
 import com.lying.init.HOBlockEntityTypes;
 import com.lying.init.HOEntityTypes;
-import com.lying.init.HOVillagePartTypes;
+import com.lying.init.HOVillageParts;
 import com.lying.init.HOVillagerProfessions;
 
 import net.minecraft.entity.ai.brain.MemoryModuleType;
@@ -90,7 +90,7 @@ public class VillageManager
 		Village village = new Village(UUID.randomUUID(), dimension, biome);
 		Random rand = Random.create(pos.getX() * pos.getZ() * pos.getY());
 		BlockRotation rotation = BlockRotation.random(rand);
-		Optional<VillagePart> partOpt = Village.makeNewPart(position, rotation, world, HOVillagePartTypes.CENTER.get(), HOVillagePartTypes.CENTER.get().getStructurePool(biome), Random.create(position.getX() * position.getZ() * position.getY()));
+		Optional<VillagePartInstance> partOpt = Village.makeNewPart(position, rotation, world, HOVillageParts.CENTER.get(), HOVillageParts.CENTER.get().getStructurePool(biome), Random.create(position.getX() * position.getZ() * position.getY()));
 		if(partOpt.isEmpty())
 			return false;
 		

@@ -19,8 +19,10 @@ import com.lying.entity.village.ai.action.ActionIncConnector;
 import com.lying.entity.village.ai.action.ActionPlacePart;
 import com.lying.entity.village.ai.goal.GoalHaveConnectors;
 import com.lying.entity.village.ai.goal.GoalTypeMinimum;
+import com.lying.entity.village.ai.goal.GoalWorkstationDiversity;
 import com.lying.init.HOBlockEntityTypes;
-import com.lying.init.HOVillagePartTypes;
+import com.lying.init.HOVillagePartGroups;
+import com.lying.init.HOVillageParts;
 import com.lying.init.HOVillagerProfessions;
 import com.lying.reference.Reference;
 
@@ -78,16 +80,18 @@ public class Village
 		
 		// Prepare HOA
 		hoa = new HOA(List.of(), List.of(
-				new GoalHaveConnectors(3, t -> t.canLinkTo(HOVillagePartTypes.STREET.get())), 
-				new GoalHaveConnectors(1, t -> t.canLinkTo(HOVillagePartTypes.HOUSE.get())),
-				new GoalTypeMinimum(HOVillagePartTypes.STREET, 1),
-				new GoalTypeMinimum(HOVillagePartTypes.HOUSE, VillageModel::residentPop),
-				new GoalTypeMinimum(HOVillagePartTypes.WORK, m -> m.residentsOfType(Resident.WORKER))
+				new GoalHaveConnectors(3, t -> t.canLinkTo(HOVillageParts.STREET.get())),
+				new GoalHaveConnectors(1, t -> t.canLinkTo(HOVillageParts.HOUSE.get())),
+				GoalTypeMinimum.ofType(HOVillageParts.STREET, 1),
+				GoalTypeMinimum.ofGroup(HOVillagePartGroups.HOUSE, VillageModel::residentPop),
+				GoalTypeMinimum.ofGroup(HOVillagePartGroups.WORK, m -> m.residentsOfType(Resident.WORKER)),
+				new GoalWorkstationDiversity()
 				));
 		
-		for(VillagePartType type : HOVillagePartTypes.values())
+		for(VillagePart type : HOVillageParts.values())
 			hoa.addAction(new ActionPlacePart(type, biome));
-		hoa.addAction(new ActionIncConnector());
+		
+		hoa.addAction(new ActionIncConnector(0.7F));
 	}
 	
 	public UUID id() { return this.id; }
@@ -100,7 +104,7 @@ public class Village
 		if(!inWorld || model.getCenter().isEmpty())
 			return false;
 		
-		VillagePart core = model.getCenter().get();
+		VillagePartInstance core = model.getCenter().get();
 		return world.isChunkLoaded(core.min()) && world.isChunkLoaded(core.max());
 	}
 	
@@ -128,12 +132,12 @@ public class Village
 		}
 		else
 		{
-			Optional<VillagePart> core = model.getCenter();
+			Optional<VillagePartInstance> core = model.getCenter();
 			if(core.isEmpty())
 				return;
 			
 			// Try to find an active throne
-			VillagePart center = core.get();
+			VillagePartInstance center = core.get();
 			throneCached = center.getTilesOfType(world, HOBlockEntityTypes.NEST.get()).stream()
 				.filter(p -> ((NestBlockEntity)world.getBlockEntity(p)).isOccupied()).findFirst();
 			
@@ -203,11 +207,11 @@ public class Village
 	public boolean grow(ServerWorld world)
 	{
 		Random rand = world.getRandom();
-		VillagePartType type = HOVillagePartTypes.values().get(rand.nextInt(HOVillagePartTypes.values().size()));
+		VillagePart type = HOVillageParts.values().get(rand.nextInt(HOVillageParts.values().size()));
 		return tryAddOfType(world, type, rand);
 	}
 	
-	public boolean tryAddOfType(ServerWorld world, VillagePartType type, Random rand)
+	public boolean tryAddOfType(ServerWorld world, VillagePart type, Random rand)
 	{
 		if(model.isEmpty() || model.cannotExpand())
 		{
@@ -229,14 +233,14 @@ public class Village
 		for(int i=0; i<rotations.length; i++)
 		{
 			BlockRotation rotation = rotations[(baseRotation.ordinal() + i)%rotations.length];
-			Optional<VillagePart> partOpt = makeNewPart(BlockPos.ORIGIN, rotation, world, type, type.getStructurePool(biome), rand);
+			Optional<VillagePartInstance> partOpt = makeNewPart(BlockPos.ORIGIN, rotation, world, type, type.getStructurePool(biome), rand);
 			if(partOpt.isEmpty())
 			{
 				Hrrmowners.LOGGER.error("Failed to create new part to expand village");
 				return false;
 			}
 			
-			VillagePart part = partOpt.get();
+			VillagePartInstance part = partOpt.get();
 			for(Connector connector : model.connectors())
 			{
 				Optional<BlockPos> connectOffset = part.getOffsetToLinkTo(connector);
@@ -257,7 +261,7 @@ public class Village
 		return false;
 	}
 	
-	public boolean addPart(VillagePart part, ServerWorld world, boolean generate)
+	public boolean addPart(VillagePartInstance part, ServerWorld world, boolean generate)
 	{
 		boolean result = model.addPart(part, world, inWorld);
 		if(inWorld)
@@ -277,7 +281,7 @@ public class Village
 	
 	public boolean intersects(Village village)
 	{
-		for(VillagePart part : village.model.parts())
+		for(VillagePartInstance part : village.model.parts())
 			if(model.wouldIntersect(part))
 				return true;
 		return false;
@@ -300,7 +304,7 @@ public class Village
 		return false;
 	}
 	
-	public static Optional<VillagePart> makeNewPart(final BlockPos position, final BlockRotation rotation, ServerWorld server, VillagePartType type, RegistryKey<StructurePool> poolKey, Random rand)
+	public static Optional<VillagePartInstance> makeNewPart(final BlockPos position, final BlockRotation rotation, ServerWorld server, VillagePart type, RegistryKey<StructurePool> poolKey, Random rand)
 	{
 		DynamicRegistryManager registryManager = server.getRegistryManager();
 		Registry<StructurePool> registry = registryManager.get(RegistryKeys.TEMPLATE_POOL);
@@ -317,7 +321,7 @@ public class Village
 		return Optional.empty();
 	}
 	
-	public static Optional<VillagePart> makeNewPart(StructurePoolElement element, VillagePartType type, BlockPos position, BlockRotation rotation, StructureTemplateManager manager)
+	public static Optional<VillagePartInstance> makeNewPart(StructurePoolElement element, VillagePart type, BlockPos position, BlockRotation rotation, StructureTemplateManager manager)
 	{
 		PoolStructurePiece poolStructurePiece = new PoolStructurePiece(
 				manager, 
@@ -327,7 +331,7 @@ public class Village
 				rotation, 
 				element.getBoundingBox(manager, position, rotation), 
 				StructureLiquidSettings.APPLY_WATERLOGGING);
-		return Optional.of(new VillagePart(UUID.randomUUID(), type, poolStructurePiece, manager));
+		return Optional.of(new VillagePartInstance(UUID.randomUUID(), type, poolStructurePiece, manager));
 	}
 	
 	public static enum Resident implements StringIdentifiable
