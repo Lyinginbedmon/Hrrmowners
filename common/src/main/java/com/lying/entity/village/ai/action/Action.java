@@ -5,6 +5,7 @@ import java.util.function.Predicate;
 import com.lying.entity.SurinaEntity;
 import com.lying.entity.village.Village;
 import com.lying.entity.village.VillageModel;
+import com.lying.entity.village.ai.Plan;
 
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
@@ -17,8 +18,8 @@ public abstract class Action
 	protected static final Predicate<SurinaEntity> IS_FUNCTIONAL = s -> s.isAlive() && !s.isAiDisabled() && !s.isRemoved() && !s.isBaby();
 	protected static final Predicate<SurinaEntity> CAN_PERFORM_TASK = IS_FUNCTIONAL.and(s -> s.getTaskManager().canPerformHOATask());
 	
-	private final Identifier name;
-	private final float cost;
+	protected final Identifier name;
+	protected final float cost;
 	
 	protected long seed = 418959963L;
 	protected Random rand;
@@ -35,6 +36,8 @@ public abstract class Action
 	
 	public float cost() { return this.cost; }
 	
+	public boolean shouldTrim() { return false; }
+	
 	public Action setSeed(long seedIn)
 	{
 		seed = seedIn;
@@ -46,6 +49,9 @@ public abstract class Action
 	
 	/** Returns whether or not this action is available to the given model */
 	public abstract boolean canTakeAction(VillageModel model);
+	
+	/** Returns true if this action can be added to the plan of the given model, usually to avoid spamming the same action for no reward */
+	public boolean canAddToPlan(Plan plan, VillageModel model) { return true; }
 	
 	/** Applies this action to the given model during planning, returning true if successful */
 	public abstract boolean consider(VillageModel model, ServerWorld world);
@@ -73,6 +79,7 @@ public abstract class Action
 		return clone;
 	}
 	
+	/** Creates an isolated instance of this action, usually for later execution */
 	protected abstract Action makeCopy();
 	
 	public boolean isRunning() { return this.lastResult == Result.RUNNING; }

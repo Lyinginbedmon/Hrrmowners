@@ -9,7 +9,7 @@ import com.lying.entity.village.ai.action.Action;
 
 public class Plan
 {
-	// The actions this plan takes
+	// The actions this plan takes, in sequential order
 	private List<Action> actions = Lists.newArrayList();
 	
 	// The total cost of all actions in this plan

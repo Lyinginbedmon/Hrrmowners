@@ -4,20 +4,22 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
+import com.google.common.base.Predicates;
 import com.google.common.collect.Lists;
 import com.lying.Hrrmowners;
 import com.lying.entity.village.Village;
 import com.lying.entity.village.VillageModel;
 import com.lying.entity.village.ai.action.Action;
 import com.lying.entity.village.ai.goal.Goal;
+import com.mojang.datafixers.util.Pair;
 
 import net.minecraft.server.world.ServerWorld;
 
@@ -33,13 +35,20 @@ public class HOA
 	
 	private final List<Action> actions = Lists.newArrayList();
 	
-	private final List<Goal> goals = Lists.newArrayList();
+	private final List<Pair<Integer,Goal>> goals = Lists.newArrayList();
 	private final Comparator<SearchEntry> stateComparator = (a, b) -> 
 	{
 		float satA = a.totalValue(this::goalSatisfaction);
 		float satB = b.totalValue(this::goalSatisfaction);
-		return satA > satB ? -1 : satA < satB ? 1 : 0;
+		if(satA != satB)
+			return satA > satB ? -1 : 1;
+		
+		int lenA = a.plan().length();
+		int lenB = b.plan().length();
+		return lenA < lenB ? -1 : lenA > lenB ? 1 : 0;	
 	};
+	
+	private Predicate<VillageModel> axioms = Predicates.alwaysTrue();
 	
 	private List<Action> currentPlan = Lists.newArrayList();
 	private Action currentAction = null;
@@ -49,10 +58,20 @@ public class HOA
 		this(List.of(), List.of());
 	}
 	
-	public HOA(List<Action> actionsIn, List<Goal> goalsIn)
+	public HOA(List<Action> actionsIn, List<Pair<Integer,Goal>> goalsIn)
 	{
 		actionsIn.forEach(a -> addAction(a));
 		goalsIn.forEach(g -> addGoal(g));
+	}
+	
+	/**
+	 * Axioms function like inviolate conditions for resulting village models.<br>
+	 * The most common axiom is that the model must have at least one open connector, to allow for further construction.<br>
+	 * The planner will never take actions which result in a model that fails any axiom
+	 */
+	public void addAxiom(Predicate<VillageModel> axiomIn)
+	{
+		axioms = axioms.and(axiomIn);
 	}
 	
 	public void addAction(Action actionIn)
@@ -63,6 +82,16 @@ public class HOA
 	
 	public void addGoal(Goal goalIn)
 	{
+		addGoal(1, goalIn);
+	}
+	
+	public void addGoal(int weightIn, Goal goalIn)
+	{
+		addGoal(Pair.of(weightIn, goalIn));
+	}
+	
+	public void addGoal(Pair<Integer, Goal> goalIn)
+	{
 		goals.add(goalIn);
 	}
 	
@@ -71,7 +100,15 @@ public class HOA
 	public void setPlan(Plan planIn)
 	{
 		clearPlan();
-		currentPlan.addAll(planIn.actions());
+		
+		// Trim unnecessary actions (usually connector inc/dec)
+		// This reduces the amount of time spent on the plan during execution
+		List<Action> newPlan = planIn.actions();
+		while(!newPlan.isEmpty() && newPlan.getLast().shouldTrim())
+			newPlan.removeLast();
+		
+		if(!newPlan.isEmpty())
+			currentPlan.addAll(newPlan);
 	}
 	
 	public void clearPlan()
@@ -123,7 +160,7 @@ public class HOA
 	/** Returns true if the given model evaluates to 100% goal satisfaction */
 	public boolean meetsObjectives(VillageModel model)
 	{
-		return goals.isEmpty() || goals.stream().allMatch(g -> g.satisfaction(model) == 1F);
+		return goals.isEmpty() || goalSatisfaction(model) == 1F;
 	}
 	
 	/** Returns the overal goal satisfaction of the given model */
@@ -133,9 +170,14 @@ public class HOA
 			return 1F;
 		
 		float total = 0F;
-		for(Goal g : goals)
-			total += g.satisfaction(model);
-		return total / goals.size();
+		float weightSum = 0F;
+		for(Pair<Integer, Goal> goal : goals)
+		{
+			float weight = goal.getFirst();
+			total += weight * goal.getSecond().satisfaction(model);
+			weightSum += weight;
+		}
+		return total / weightSum;
 	}
 	
 	public boolean tryGeneratePlan(final VillageModel model, final Village village, ServerWorld world)
@@ -160,6 +202,10 @@ public class HOA
 		}
 		
 		LOGGER.info("## HOA plan generation started ##");
+		LOGGER.info("#= Initial Status");
+		LOGGER.info("# Goal satisfaction {}", goalSatisfaction(model));
+		LOGGER.info("# Population {} ({} residents)", model.population(), model.residentPop());
+		LOGGER.info("# {} available actions", actions.size());
 		searchStart = System.currentTimeMillis();
 		Plan finalPlan = findSatisfyingPlan(model, world);
 		LOGGER.info("## HOA plan generation ended in {}ms ##", System.currentTimeMillis() - searchStart);
@@ -180,6 +226,12 @@ public class HOA
 	@Nullable
 	private Plan findSatisfyingPlan(final VillageModel model, ServerWorld world)
 	{
+		if(!axioms.test(model))
+		{
+			LOGGER.info(" # Current village model fails one or more axioms, cannot make plan");
+			return null;
+		}
+		
 		SearchEntry initial = new SearchEntry(model.copy(world), Plan.blank());
 		
 		// Map of village states to the shortest & cheapest plan that reached them
@@ -200,15 +252,25 @@ public class HOA
 			// List of plans generated from our current best
 			List<SearchEntry> nextCheck = Lists.newArrayList();
 			VillageModel presentState = plan.state();
+			if(!axioms.test(presentState))
+			{
+				// If we somehow logged a model that fails our axioms, refund this iteration
+				LOGGER.warn(" # # Logged village model fails axioms, refunding iteration");
+				iteration--;
+				continue;
+			}
 			
-			// Iterate from our best plan to identify the next best step
-			for(Action action : actions.stream().filter(a -> a.canTakeAction(presentState)).toList())
+			// Iterate from our best plan to identify potential next steps
+			for(Action action : actions.stream().filter(a -> a.canTakeAction(presentState) && a.canAddToPlan(plan.plan(), presentState)).toList())
 			{
 				action.setSeed(world.random.nextLong());
 				VillageModel planModel = presentState.copy(world);
-				if(!action.consider(planModel, world))
+				
+				// Discard any action that isn't applicable for some reason or that results in the village model failing axioms
+				if(!action.consider(planModel, world) || !axioms.test(planModel))
 					continue;
 				
+				// The state of the plan after we add this action to it
 				Plan planAfter = plan.plan().copy().add(action.copy());
 				
 				// If we find a plan that satisfies all objectives, exit search immediately
@@ -235,7 +297,7 @@ public class HOA
 		// FIXME Prioritise entries with greater satisfaction and cheaper-on-average plans
 		public float totalValue(Function<VillageModel,Float> satisfaction)
 		{
-			return satisfaction.apply(state) / plan.cost();
+			return satisfaction.apply(state);
 		}
 	};
 	
@@ -248,14 +310,14 @@ public class HOA
 			return put(pair.state(), pair.plan());
 		}
 		
-		/** Adds the given plan and model to the map, returning true.<br>Returns false if an existing cheaper plan exists for the same model state. */
+		/** Adds the given plan and model to the map, returning true.<br>Returns false if an existing better plan exists for the same model state. */
 		public boolean put(VillageModel model, Plan plan)
 		{
 			// If an existing plan results in the same model state, store only the best plan
 			for(Entry<VillageModel, Plan> entry : states.entrySet())
 				if(VillageModel.isEquivalent(entry.getKey(), model))
 				{
-					if(entry.getValue().cost() < plan.cost())
+					if(entry.getValue().length() < plan.length())
 						return false;
 					break;
 				}

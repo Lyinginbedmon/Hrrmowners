@@ -25,6 +25,7 @@ import com.lying.init.HOVillagePartGroups;
 import com.lying.init.HOVillageParts;
 import com.lying.init.HOVillagerProfessions;
 import com.lying.reference.Reference;
+import com.mojang.datafixers.util.Pair;
 
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtOps;
@@ -80,18 +81,25 @@ public class Village
 		
 		// Prepare HOA
 		hoa = new HOA(List.of(), List.of(
-				new GoalHaveConnectors(3, t -> t.canLinkTo(HOVillageParts.STREET.get())),
-				new GoalHaveConnectors(1, t -> t.canLinkTo(HOVillageParts.HOUSE.get())),
-				GoalTypeMinimum.ofType(HOVillageParts.STREET, 1),
-				GoalTypeMinimum.ofGroup(HOVillagePartGroups.HOUSE, VillageModel::residentPop),
-				GoalTypeMinimum.ofGroup(HOVillagePartGroups.WORK, m -> m.residentsOfType(Resident.WORKER)),
-				new GoalWorkstationDiversity()
+				Pair.of(5, new GoalHaveConnectors(3, t -> t.canLinkTo(HOVillageParts.STREET.get()))),
+				Pair.of(5, new GoalHaveConnectors(1, t -> t.canLinkTo(HOVillageParts.HOUSE.get()))),
+				Pair.of(1, GoalTypeMinimum.ofType(HOVillageParts.STREET, 1)),
+				Pair.of(10, GoalTypeMinimum.ofType(HOVillageParts.HOUSE, VillageModel::residentPop)),
+				Pair.of(10, GoalTypeMinimum.ofGroup(HOVillagePartGroups.WORK, m -> m.residentsOfType(Resident.WORKER))),
+				Pair.of(6, new GoalWorkstationDiversity())
 				));
+		hoa.addAxiom(m -> !m.cannotExpand());
 		
-		for(VillagePart type : HOVillageParts.values())
-			hoa.addAction(new ActionPlacePart(type, biome));
+		hoa.addAction(new ActionPlacePart(HOVillageParts.STREET.get(), biome));
+		hoa.addAction(new ActionPlacePart(HOVillageParts.CORNER.get(), biome));
+		hoa.addAction(new ActionPlacePart(HOVillageParts.HOUSE.get(), biome));
+		hoa.addAction(new ActionPlacePart(HOVillageParts.WEAPONSMITH.get(), biome));
+//		for(VillagePart type : HOVillageParts.values())	// Temporarily disabled due to lack of structures
+//			hoa.addAction(new ActionPlacePart(type, biome));
 		
-		hoa.addAction(new ActionIncConnector(0.7F));
+//		hoa.addAction(new ActionRandConnector(1F));
+		hoa.addAction(new ActionIncConnector(true, 1F));
+		hoa.addAction(new ActionIncConnector(false, 1F));
 	}
 	
 	public UUID id() { return this.id; }

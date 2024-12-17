@@ -28,7 +28,9 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.structure.StructureContext;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 
 public class VillageModel
@@ -208,10 +210,31 @@ public class VillageModel
 	
 	public Optional<Connector> selectedConnector()
 	{
-		return cannotExpand() ? Optional.empty() : Optional.of(connectors.get(connectorIndex%connectors.size()));
+		int tally = openConnectors();
+		if(tally == 0)
+			return Optional.empty();
+		if(tally == 1)
+			return Optional.of(connectors.getFirst());
+		
+		return Optional.of(connectors.get(connectorIndex % tally));
 	}
 	
-	public void incSelectedConnector() { connectorIndex++; }
+	public void incSelectedConnector(int inc)
+	{
+		connectorIndex += inc;
+		if(connectorIndex < 0)
+			connectorIndex = 0;
+	}
+	
+	public int connectorIndex() { return this.connectorIndex; }
+	
+	public void selectRandomConnector(Random rand)
+	{
+		if(openConnectors() < 2)
+			return;
+		
+		connectorIndex = rand.nextBetween(0, openConnectors());
+	}
 	
 	public int getTallyOf(VillagePart type) { return tally.getOrDefault(type.registryName(), 0); }
 	
@@ -227,7 +250,11 @@ public class VillageModel
 	
 	public boolean contains(BlockPos pos) { return parts.stream().anyMatch(part -> part.contains(pos)); }
 	
+	/** Returns a list of all parts that contain the given position */
 	public List<VillagePartInstance> getContainers(BlockPos pos) { return parts.stream().filter(part -> part.contains(pos)).toList(); }
+	
+	/** Returns a list of all parts that intersect the given bounding box */
+	public List<VillagePartInstance> getIntersections(Box box) { return parts.stream().filter(part -> part.bounds().intersects(box)).toList(); }
 	
 	public boolean wouldIntersect(VillagePartInstance part) { return parts.stream().anyMatch(part2 -> part2.intersects(part)); }
 	
@@ -279,12 +306,16 @@ public class VillageModel
 		connectors.clear();
 		for(VillagePartInstance part : parts)
 		{
+			Predicate<VillagePartInstance> isNotHost = c -> !c.id.equals(part.id);
 			List<Connector> remove = Lists.newArrayList();
 			for(Connector connector : part.openConnections())
-				if(getContainers(connector.linkPos()).stream().anyMatch(c -> !c.id.equals(part.id)))
+			{
+				// If the connector connects to or would intersect any component other than its host, remove it
+				if(getContainers(connector.linkPos()).stream().anyMatch(isNotHost) || getIntersections(connector.occupancy()).stream().anyMatch(isNotHost))
 					remove.add(connector);
 				else
 					connectors.add(connector);
+			}
 			remove.forEach(info -> part.lockConnectorAt(info.pos, shouldNotify));
 		}
 	}

@@ -16,7 +16,10 @@ import com.lying.data.SurinaVillageData;
 import com.lying.entity.village.VillagePart;
 import com.lying.entity.village.VillagePartGroup;
 
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.structure.pool.StructurePool;
 import net.minecraft.util.Identifier;
+import net.minecraft.world.biome.Biome;
 
 public class HOVillageParts
 {
@@ -26,19 +29,30 @@ public class HOVillageParts
 	
 	public static final Supplier<VillagePart> HOUSE		= register(prefix("house"), id -> new VillagePart(id, HOVillagePartGroups.HOUSE.get(), 2F, biome -> SurinaVillageData.DESERT_HOUSE_KEY));
 	
-	public static final Supplier<VillagePart> STREET	= register(prefix("street"), id -> new VillagePart(id, HOVillagePartGroups.STREET.get(), 1F, biome -> SurinaVillageData.DESERT_STREET_KEY));
-	public static final Supplier<VillagePart> CORNER	= register(prefix("corner"), id -> new VillagePart(id, HOVillagePartGroups.STREET.get(), 1F, biome -> SurinaVillageData.DESERT_CORNER_KEY));
+	public static final Supplier<VillagePart> STREET	= register(prefix("street"), street(biome -> SurinaVillageData.DESERT_STREET_KEY));
+	public static final Supplier<VillagePart> CORNER	= register(prefix("corner"), street(biome -> SurinaVillageData.DESERT_CORNER_KEY));
 	
-	public static final Supplier<VillagePart> WEAPONSMITH	= register(prefix("weaponsmith"), id -> new VillagePart(id, HOVillagePartGroups.WORK.get(), 3F, biome -> SurinaVillageData.DESERT_WORK_KEY));
-	public static final Supplier<VillagePart> CARTOGRAPHER	= register(prefix("cartographer"), id -> new VillagePart(id, HOVillagePartGroups.WORK.get(), 3F, biome -> SurinaVillageData.DESERT_WORK_KEY));
-	public static final Supplier<VillagePart> FARM			= register(prefix("farm"), id -> new VillagePart(id, HOVillagePartGroups.WORK.get(), 3F, biome -> SurinaVillageData.DESERT_WORK_KEY));
-	public static final Supplier<VillagePart> ARMORER		= register(prefix("armorer"), id -> new VillagePart(id, HOVillagePartGroups.WORK.get(), 3F, biome -> SurinaVillageData.DESERT_WORK_KEY));
-	public static final Supplier<VillagePart> BUTCHER		= register(prefix("butcher"), id -> new VillagePart(id, HOVillagePartGroups.WORK.get(), 3F, biome -> SurinaVillageData.DESERT_WORK_KEY));
-	public static final Supplier<VillagePart> FISHER		= register(prefix("fisher"), id -> new VillagePart(id, HOVillagePartGroups.WORK.get(), 3F, biome -> SurinaVillageData.DESERT_WORK_KEY));
-	public static final Supplier<VillagePart> LIBRARY		= register(prefix("library"), id -> new VillagePart(id, HOVillagePartGroups.WORK.get(), 3F, biome -> SurinaVillageData.DESERT_WORK_KEY));
-	public static final Supplier<VillagePart> MASON			= register(prefix("mason"), id -> new VillagePart(id, HOVillagePartGroups.WORK.get(), 3F, biome -> SurinaVillageData.DESERT_WORK_KEY));
-	public static final Supplier<VillagePart> SHEPHERD		= register(prefix("shepherd"), id -> new VillagePart(id, HOVillagePartGroups.WORK.get(), 3F, biome -> SurinaVillageData.DESERT_WORK_KEY));
-	public static final Supplier<VillagePart> TANNER		= register(prefix("tanner"), id -> new VillagePart(id, HOVillagePartGroups.WORK.get(), 3F, biome -> SurinaVillageData.DESERT_WORK_KEY));
+	/** The standard cost of placing a workstation */
+	private static final float WORKSTATION_COST = 3F;
+	
+	public static final Supplier<VillagePart> ARMORER		= register(prefix("armorer"),		workstation(WORKSTATION_COST, biome -> SurinaVillageData.DESERT_ARMORER_KEY));
+	public static final Supplier<VillagePart> BUTCHER		= register(prefix("butcher"),		workstation(WORKSTATION_COST, biome -> SurinaVillageData.DESERT_BUTCHER_KEY));
+	public static final Supplier<VillagePart> CARTOGRAPHER	= register(prefix("cartographer"),	workstation(WORKSTATION_COST, biome -> SurinaVillageData.DESERT_CARTOGRAPHER_KEY));
+	public static final Supplier<VillagePart> FARM			= register(prefix("farm"),			workstation(WORKSTATION_COST, biome -> SurinaVillageData.DESERT_FARM_KEY));
+	public static final Supplier<VillagePart> LIBRARY		= register(prefix("library"),		workstation(WORKSTATION_COST, biome -> SurinaVillageData.DESERT_LIBRARY_KEY));
+	public static final Supplier<VillagePart> MASON			= register(prefix("mason"),			workstation(WORKSTATION_COST, biome -> SurinaVillageData.DESERT_MASON_KEY));
+	public static final Supplier<VillagePart> SHEPHERD		= register(prefix("shepherd"),		workstation(WORKSTATION_COST, biome -> SurinaVillageData.DESERT_SHEPHERD_KEY));
+	public static final Supplier<VillagePart> WEAPONSMITH	= register(prefix("weaponsmith"),	workstation(WORKSTATION_COST, biome -> SurinaVillageData.DESERT_WEAPONSMITH_KEY));
+	
+	private static Function<Identifier, VillagePart> street(Function<RegistryKey<Biome>, RegistryKey<StructurePool>> poolKeyIn)
+	{
+		return id -> new VillagePart(id, HOVillagePartGroups.STREET.get(), 10F, poolKeyIn);
+	}
+	
+	private static Function<Identifier, VillagePart> workstation(float buildCost, Function<RegistryKey<Biome>, RegistryKey<StructurePool>> poolKeyIn)
+	{
+		return id -> new VillagePart(id, HOVillagePartGroups.WORK.get(), buildCost, poolKeyIn);
+	}
 	
 	private static Supplier<VillagePart> register(Identifier name, Function<Identifier, VillagePart> funcIn)
 	{

@@ -44,7 +44,7 @@ public class GoalTypeMinimum implements Goal
 	
 	public float satisfaction(VillageModel model)
 	{
-		float count = Math.max(this.count.apply(model), 0);
-		return count == 0F ? 1F: MathHelper.clamp((float)model.getTallyMatching(predicate) / count, 0F, 1F);
+		float target = Math.max(count.apply(model), 0);
+		return target == 0F ? 1F: MathHelper.clamp((float)model.getTallyMatching(predicate) / target, 0F, 1F);
 	}
 }

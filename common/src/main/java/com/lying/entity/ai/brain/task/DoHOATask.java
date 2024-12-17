@@ -64,6 +64,8 @@ public class DoHOATask extends MultiTickTask<SurinaEntity>
 		EntityNavigation navigator = entity.getNavigation();
 		navigator.stop();
 		
+		entity.getLookControl().lookAt(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D);
+		
 		Phase phase = Phase.fromTicks(++ticksRunning);
 		switch(phase)
 		{

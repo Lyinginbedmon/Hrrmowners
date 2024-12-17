@@ -5,7 +5,8 @@ import java.util.Optional;
 import org.jetbrains.annotations.Nullable;
 
 import com.lying.entity.village.VillagePart;
-import com.lying.init.HOVillageParts;
+import com.lying.entity.village.VillagePartGroup;
+import com.lying.init.HOVillagePartGroups;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.block.JigsawBlock;
@@ -17,6 +18,7 @@ import net.minecraft.registry.Registries;
 import net.minecraft.structure.StructureTemplate.StructureBlockInfo;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 
 public class Connector
@@ -39,9 +41,15 @@ public class Connector
 	
 	public BlockPos linkPos() { return pos.offset(facing); }
 	
+	public Box occupancy()
+	{
+		BlockPos pos = linkPos().offset(facing, 2);
+		return (new Box(pos)).expand(2);
+	}
+	
 	public boolean linksTo(Connector b)
 	{
-		return b.facing == facing.getOpposite() && canLinkTo(b.type());
+		return b.facing == facing.getOpposite() && canLinkToGroup(b.partGroup());
 	}
 	
 	public boolean equals(Connector b)
@@ -53,20 +61,29 @@ public class Connector
 				NbtHelper.matches(b.info.nbt(), info.nbt(), true);
 	}
 	
-	/** Returns the PartType that this connector primarily connects to */
-	public VillagePart type() { return HOVillageParts.byID(partID); }
+	/** Returns the VillagePartGroup that this connector primarily connects to */
+	public VillagePartGroup partGroup() { return HOVillagePartGroups.byID(partID); }
 	
 	/** Returns true if this connector can connect to a recipient connector for the given type(s) */
 	public boolean canLinkTo(VillagePart... set)
 	{
-		VillagePart type = type();
+		VillagePartGroup type = partGroup();
 		if(type == null)
 			return true;
 		
 		for(VillagePart t : set)
-			if(t == null || type.group().canConnectTo(t.group()))
+			if(t == null || canLinkToGroup(t.group()))
 				return true;
 		return false;
+	}
+	
+	public boolean canLinkToGroup(VillagePartGroup group)
+	{
+		VillagePartGroup type = partGroup();
+		if(type == null)
+			return true;
+		
+		return group == null || group.canConnectTo(type);
 	}
 	
 	public NbtCompound toNbt()

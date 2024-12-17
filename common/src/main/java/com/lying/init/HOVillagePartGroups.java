@@ -21,8 +21,8 @@ public class HOVillagePartGroups
 	private static final Map<Identifier, Supplier<VillagePartGroup>> VALUES = new HashMap<>();
 	
 	public static final Supplier<VillagePartGroup> CENTER	= register(prefix("center"), id -> new VillagePartGroup(id, 0x0000FF));
-	public static final Supplier<VillagePartGroup> HOUSE	= register(prefix("house"), id -> new VillagePartGroup(id, 0x00FF00, isBuilding()));
-	public static final Supplier<VillagePartGroup> WORK		= register(prefix("workstation"), id -> new VillagePartGroup(id, 0xFF0000, isBuilding()));
+	public static final Supplier<VillagePartGroup> HOUSE	= register(prefix("house"), id -> new VillagePartGroup(id, 0x00FF00, isAnyBuilding()));
+	public static final Supplier<VillagePartGroup> WORK		= register(prefix("workstation"), id -> new VillagePartGroup(id, 0xFF0000, isAnyBuilding()));
 	public static final Supplier<VillagePartGroup> STREET	= register(prefix("street"), id -> new VillagePartGroup(id, 0xFFFFFF, isStreet()));
 	
 	private static Supplier<VillagePartGroup> register(Identifier name, Function<Identifier, VillagePartGroup> funcIn)
@@ -34,7 +34,7 @@ public class HOVillagePartGroups
 	
 	private static Predicate<VillagePartGroup> isStreet() { return t -> t.equalsAny(STREET.get()); }
 	
-	private static Predicate<VillagePartGroup> isBuilding() { return t -> t.equalsAny(HOUSE.get(), WORK.get()); }
+	private static Predicate<VillagePartGroup> isAnyBuilding() { return t -> t.equalsAny(HOUSE.get(), WORK.get()); }
 	
 	public static void init()
 	{

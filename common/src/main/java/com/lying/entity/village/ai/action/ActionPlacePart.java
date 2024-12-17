@@ -10,8 +10,8 @@ import com.lying.Hrrmowners;
 import com.lying.entity.SurinaEntity;
 import com.lying.entity.village.Village;
 import com.lying.entity.village.VillageModel;
-import com.lying.entity.village.VillagePartInstance;
 import com.lying.entity.village.VillagePart;
+import com.lying.entity.village.VillagePartInstance;
 import com.lying.entity.village.ai.Connector;
 import com.lying.reference.Reference;
 
@@ -25,7 +25,6 @@ import net.minecraft.structure.pool.StructurePoolElement;
 import net.minecraft.structure.pool.StructurePoolElementType;
 import net.minecraft.structure.pool.alias.StructurePoolAliasLookup;
 import net.minecraft.util.BlockRotation;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.world.biome.Biome;
@@ -49,7 +48,7 @@ public class ActionPlacePart extends Action
 	
 	public ActionPlacePart(VillagePart typeIn, RegistryKey<Biome> styleIn, Optional<VillagePartInstance> partIn)
 	{
-		super(Identifier.of(Reference.ModInfo.MOD_ID, "place_"+typeIn.asString()), typeIn.costToBuild());
+		super(Reference.ModInfo.prefix("place_"+typeIn.asString()), typeIn.costToBuild());
 		type = typeIn;
 		style = styleIn;
 		poolKey = type.getStructurePool(style);
@@ -60,7 +59,7 @@ public class ActionPlacePart extends Action
 	
 	public boolean canTakeAction(VillageModel model)
 	{
-		return !model.cannotExpand() && model.openConnectors(c -> c.canLinkTo(type)) > 0;
+		return !model.cannotExpand() && model.selectedConnector().isPresent() && model.selectedConnector().get().canLinkTo(type);
 	}
 	
 	public boolean consider(VillageModel model, ServerWorld world)
@@ -74,7 +73,6 @@ public class ActionPlacePart extends Action
 		if(partToAdd.isEmpty() || model.selectedConnector().isEmpty())
 			return Result.FAILURE;
 		
-//		LOGGER.info("{} Updating place part action, in phase {}", world.isClient() ? "CLIENT" : "SERVER", phase.name());
 		BlockPos connector = model.selectedConnector().get().pos;
 		GlobalPos dest = new GlobalPos(world.getRegistryKey(), connector);
 		switch(phase)
@@ -94,9 +92,7 @@ public class ActionPlacePart extends Action
 				});
 				return Result.RUNNING;
 			case WAIT:
-				/**
-				 * If there are no residents acting on this task, return to requesting phase
-				 */
+				// If there are no residents acting on this task, return to requesting phase to find someone else
 				if(village.getResidentsMatching(hasThisTask(dest)).isEmpty())
 					setPhase(Phase.REQUEST);
 				
@@ -117,7 +113,6 @@ public class ActionPlacePart extends Action
 	
 	private void setPhase(Phase phaseIn)
 	{
-//		LOGGER.info(" # Action {} to {} phase", phaseIn.ordinal() < phase.ordinal() ? "regressing" : "progressing", phase.name());
 		phase = phaseIn;
 	}
 	
@@ -146,6 +141,9 @@ public class ActionPlacePart extends Action
 		}
 		
 		Connector connector = connectOpt.get();
+		if(!connector.canLinkTo(type))
+			return Optional.empty();
+		
 		DynamicRegistryManager registryManager = world.getRegistryManager();
 		Registry<StructurePool> registry = registryManager.get(RegistryKeys.TEMPLATE_POOL);
 		StructurePoolAliasLookup aliasLookup = StructurePoolAliasLookup.create(List.of(), connector.linkPos(), world.getSeed());
