@@ -260,44 +260,44 @@ public class HOA
 				continue;
 			}
 			
-			// Iterate from our best plan to identify potential next steps
+			// Iterate from our current best plan to identify potential next steps
 			for(Action action : actions.stream().filter(a -> a.canTakeAction(presentState) && a.canAddToPlan(plan.plan(), presentState)).toList())
 			{
-				action.setSeed(world.random.nextLong());
-				VillageModel planModel = presentState.copy(world);
+				action.setSeed(world.random.nextLong());	// TODO Reduce reliance on RNG during planning
 				
 				// Discard any action that isn't applicable for some reason or that results in the village model failing axioms
-				if(!action.consider(planModel, world) || !axioms.test(planModel))
+				VillageModel modelAfter = presentState.copy(world);
+				if(!action.consider(modelAfter, world) || !axioms.test(modelAfter))
 					continue;
 				
 				// The state of the plan after we add this action to it
 				Plan planAfter = plan.plan().copy().add(action.copy());
 				
-				// If we find a plan that satisfies all objectives, exit search immediately
-				if(meetsObjectives(planModel))
+				// If we find a plan that satisfies all objectives 100%, exit search immediately
+				if(meetsObjectives(modelAfter))
 					return planAfter;
 				
-				nextCheck.add(new SearchEntry(planModel, planAfter));
+				nextCheck.add(new SearchEntry(modelAfter, planAfter));
 			}
 			
 			// Log each new state in the state map
+			// Ignore any plans that reach a previously-calculated state by a less efficient means
 			for(SearchEntry p : nextCheck)
-				if(stateMap.put(p.state(), p.plan()))	// Ignore any plans that reach a previously-calculated state by a less efficient means
+				if(stateMap.put(p.state(), p.plan()))
 					plansToCheck.add(p);
 			
 			// Sort plans by overall goal satisfaction to prioritise checking better plans first
 			plansToCheck.sort(stateComparator);
 		}
 		
-		return stateMap.getBestFor(this::goalSatisfaction);
+		return stateMap.getBestPlanFor(this::goalSatisfaction);
 	}
 	
 	private static record SearchEntry(VillageModel state, Plan plan)
 	{
-		// FIXME Prioritise entries with greater satisfaction and cheaper-on-average plans
 		public float totalValue(Function<VillageModel,Float> satisfaction)
 		{
-			return satisfaction.apply(state);
+			return satisfaction.apply(state) / plan.length();
 		}
 	};
 	
@@ -326,16 +326,8 @@ public class HOA
 			return true;
 		}
 		
-		/** Returns an Optional containing the first plan that matches the given condition */
-		public Optional<Plan> getPlanFor(Predicate<VillageModel> predicate)
-		{
-			if(!states.isEmpty())
-				return states.entrySet().stream().filter(e -> predicate.test(e.getKey())).map(e -> e.getValue()).findFirst();
-			return Optional.empty();
-		}
-		
 		/** Returns the plan with the highest score according to the given evaluator */
-		public Plan getBestFor(Function<VillageModel, Float> evaluator)
+		public Plan getBestPlanFor(Function<VillageModel, Float> evaluator)
 		{
 			if(states.isEmpty())
 				return Plan.blank();

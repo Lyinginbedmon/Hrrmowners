@@ -34,46 +34,52 @@ public class ActionPlacePart extends Action
 	public static final Logger LOGGER = Hrrmowners.LOGGER;
 	
 	private final VillagePart type;
+	private final Predicate<Connector> connectorPredicate;
 	private final RegistryKey<Biome> style;
 	
 	private final RegistryKey<StructurePool> poolKey;
 	
 	private Optional<VillagePartInstance> partToAdd = Optional.empty();
+	private Optional<Connector> placeToAdd = Optional.empty();
 	private Phase phase = Phase.REQUEST;
 	
 	public ActionPlacePart(VillagePart typeIn, RegistryKey<Biome> styleIn)
 	{
-		this(typeIn, styleIn, Optional.empty());
+		this(typeIn, styleIn, Optional.empty(), Optional.empty());
 	}
 	
-	public ActionPlacePart(VillagePart typeIn, RegistryKey<Biome> styleIn, Optional<VillagePartInstance> partIn)
+	public ActionPlacePart(VillagePart typeIn, RegistryKey<Biome> styleIn, Optional<VillagePartInstance> partIn, Optional<Connector> placeIn)
 	{
 		super(Reference.ModInfo.prefix("place_"+typeIn.asString()), typeIn.costToBuild());
 		type = typeIn;
+		connectorPredicate = c -> c.canLinkToGroup(type.group());
 		style = styleIn;
 		poolKey = type.getStructurePool(style);
+		
 		partToAdd = partIn;
+		placeToAdd = placeIn;
 	}
 	
-	protected Action makeCopy() { return new ActionPlacePart(type, style, partToAdd); }
+	protected Action makeCopy() { return new ActionPlacePart(type, style, partToAdd, placeToAdd); }
 	
 	public boolean canTakeAction(VillageModel model)
 	{
-		return !model.cannotExpand() && model.selectedConnector().isPresent() && model.selectedConnector().get().canLinkTo(type);
+		return !model.cannotExpand() && model.firstConnectorMatching(connectorPredicate).isPresent();
 	}
 	
 	public boolean consider(VillageModel model, ServerWorld world)
 	{
+		placeToAdd = model.firstConnectorMatching(connectorPredicate);
 		(partToAdd = getSuitablePart(model, world)).ifPresent(p -> model.addPart(p, world, false));
-		return partToAdd.isPresent();
+		return placeToAdd.isPresent() && partToAdd.isPresent();
 	}
 	
 	protected Result enact(VillageModel model, Village village, ServerWorld world)
 	{
-		if(partToAdd.isEmpty() || model.selectedConnector().isEmpty())
+		if(partToAdd.isEmpty() || placeToAdd.isEmpty())
 			return Result.FAILURE;
 		
-		BlockPos connector = model.selectedConnector().get().pos;
+		BlockPos connector = placeToAdd.get().pos;
 		GlobalPos dest = new GlobalPos(world.getRegistryKey(), connector);
 		switch(phase)
 		{
@@ -133,10 +139,10 @@ public class ActionPlacePart extends Action
 		resetRand();
 		BlockRotation[] rotations = BlockRotation.values();
 		BlockRotation baseRotation = rotations[rand.nextInt(rotations.length)];
-		Optional<Connector> connectOpt = model.selectedConnector();
+		Optional<Connector> connectOpt = model.firstConnectorMatching(connectorPredicate);
 		if(connectOpt.isEmpty())
 		{
-			LOGGER.error("Place part action checked after canTakeAction returned true, but no connector selected");
+			LOGGER.error("Place part action checked after canTakeAction returned true, but no connector available");
 			return Optional.empty();
 		}
 		

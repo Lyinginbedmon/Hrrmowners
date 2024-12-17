@@ -219,6 +219,11 @@ public class VillageModel
 		return Optional.of(connectors.get(connectorIndex % tally));
 	}
 	
+	public Optional<Connector> firstConnectorMatching(Predicate<Connector> predicate)
+	{
+		return connectors.stream().filter(predicate).findFirst();
+	}
+	
 	public void incSelectedConnector(int inc)
 	{
 		connectorIndex += inc;
@@ -271,7 +276,7 @@ public class VillageModel
 			return false;
 		
 		// Selected connector, prior to updating the list of available connectors
-		Optional<Connector> lastConnector = selectedConnector();
+//		Optional<Connector> lastConnector = selectedConnector();
 		
 		parts.add(part);
 		tally.put(part.type.registryName(), tally.getOrDefault(part.type.registryName(), 0) + 1);
@@ -281,22 +286,31 @@ public class VillageModel
 			notifyObservers(world.getRegistryKey());
 		
 		// Move selected connector the closest viable connector
-		if(lastConnector.isPresent())
-		{
-			BlockPos pos = lastConnector.get().pos;
-			int closestInd = 0;
-			double closestDist = Double.MAX_VALUE;
-			for(int index = 0; index < connectors.size(); index++)
-			{
-				double dist = pos.getSquaredDistance(connectors.get(index).pos);
-				if(dist < closestDist)
-				{
-					closestDist = dist;
-					closestInd = index;
-				}
-			}
-			connectorIndex = closestInd;
-		}
+//		if(lastConnector.isPresent())
+//		{
+//			BlockPos pos = lastConnector.get().pos;
+//			int closestInd = 0;
+//			double closestDist = Double.MAX_VALUE;
+//			for(int index = 0; index < connectors.size(); index++)
+//			{
+//				double dist = pos.getSquaredDistance(connectors.get(index).pos);
+//				if(dist < closestDist)
+//				{
+//					closestDist = dist;
+//					closestInd = index;
+//				}
+//			}
+//			connectorIndex = closestInd;
+//		}
+		
+		// Sort connectors by distance to placed part, this encourages building in the same general area
+		BlockPos origin = part.pivot();
+		connectors.sort((a, b) -> {
+			double disA = a.pos.getSquaredDistance(origin);
+			double disB = b.pos.getSquaredDistance(origin);
+			return disA < disB ? -1 : disA > disB ? 1 : 0;
+		});
+		
 		return true;
 	}
 	
@@ -340,11 +354,6 @@ public class VillageModel
 	public void eraseAll(ServerWorld world, RegistryKey<World> dimension)
 	{
 		parts.forEach(part -> erasePart(part, world, dimension));
-	}
-	
-	public List<Connector> getAvailableConnections()
-	{
-		return parts.stream().flatMap(part -> part.openConnections().stream()).toList();
 	}
 	
 	public void notifyObservers(RegistryKey<World> dimension)

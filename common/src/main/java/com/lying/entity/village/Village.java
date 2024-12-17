@@ -15,7 +15,6 @@ import com.lying.entity.SurinaEntity;
 import com.lying.entity.village.ai.Connector;
 import com.lying.entity.village.ai.HOA;
 import com.lying.entity.village.ai.action.Action;
-import com.lying.entity.village.ai.action.ActionIncConnector;
 import com.lying.entity.village.ai.action.ActionPlacePart;
 import com.lying.entity.village.ai.goal.GoalHaveConnectors;
 import com.lying.entity.village.ai.goal.GoalTypeMinimum;
@@ -90,16 +89,8 @@ public class Village
 				));
 		hoa.addAxiom(m -> !m.cannotExpand());
 		
-		hoa.addAction(new ActionPlacePart(HOVillageParts.STREET.get(), biome));
-		hoa.addAction(new ActionPlacePart(HOVillageParts.CORNER.get(), biome));
-		hoa.addAction(new ActionPlacePart(HOVillageParts.HOUSE.get(), biome));
-		hoa.addAction(new ActionPlacePart(HOVillageParts.WEAPONSMITH.get(), biome));
-//		for(VillagePart type : HOVillageParts.values())	// Temporarily disabled due to lack of structures
-//			hoa.addAction(new ActionPlacePart(type, biome));
-		
-//		hoa.addAction(new ActionRandConnector(1F));
-		hoa.addAction(new ActionIncConnector(true, 1F));
-		hoa.addAction(new ActionIncConnector(false, 1F));
+		for(VillagePart type : HOVillageParts.values())
+			hoa.addAction(new ActionPlacePart(type, biome));
 	}
 	
 	public UUID id() { return this.id; }
