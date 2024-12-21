@@ -151,6 +151,9 @@ public class VillagePartInstance
 		element.getStructureBlockInfos(templateManager, piece.getPos(), piece.getRotation(), random()).stream()
 			.filter(info -> isConnector(info, bounds))
 			.forEach(info -> connectors.add(new Connector(info)));
+		
+		if(connectors.isEmpty())
+			LOGGER.error("Village part instantiated with no planner connectors! This will never be placed! {}", type.asString());
 	}
 	
 	public static boolean isConnector(StructureBlockInfo info, BlockBox bounds)
@@ -170,7 +173,7 @@ public class VillagePartInstance
 	
 	public Optional<BlockPos> getOffsetToLinkTo(Connector connector)
 	{
-		return connectors.stream().filter(c -> c.linksTo(connector)).map(c -> connector.pos.subtract(c.linkPos())).findAny();
+		return connectors.stream().filter(c -> c.canLinkTo(connector)).map(c -> connector.pos.subtract(c.linkPos())).findAny();
 	}
 	
 	public void lockConnectorAt(BlockPos position, boolean shouldNotify)

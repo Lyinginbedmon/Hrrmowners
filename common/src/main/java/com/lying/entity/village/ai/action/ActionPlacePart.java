@@ -147,8 +147,11 @@ public class ActionPlacePart extends Action
 		}
 		
 		Connector connector = connectOpt.get();
-		if(!connector.canLinkTo(type))
+		if(!connector.canLinkToGroup(type.group()))
+		{
+			LOGGER.error("Connector for {} cannot link to part of type {}", connector.partGroup().asString(), type.asString());
 			return Optional.empty();
+		}
 		
 		DynamicRegistryManager registryManager = world.getRegistryManager();
 		Registry<StructurePool> registry = registryManager.get(RegistryKeys.TEMPLATE_POOL);
@@ -161,10 +164,16 @@ public class ActionPlacePart extends Action
 		}
 		
 		// Examine all entries in the pool with all rotations until we find one that can mate with the selected connector
-		for(StructurePoolElement option : optPool.get().getElementIndicesInRandomOrder(rand))
+		StructurePool pool = optPool.get();
+		int index = 0, count = pool.getElementCount();
+		for(StructurePoolElement option : pool.getElementIndicesInRandomOrder(rand))
 		{
+			LOGGER.info(" # Evaluating {} structure {} of {}", type.asString(), ++index, count);
 			if(option.getType() == StructurePoolElementType.EMPTY_POOL_ELEMENT)
+			{
+				LOGGER.warn("Skipped empty pool element");
 				continue;
+			}
 			
 			for(int i=0; i<rotations.length; i++)
 			{

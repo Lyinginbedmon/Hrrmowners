@@ -36,7 +36,7 @@ public class VillagePartGroup
 	
 	public boolean equals(Object b) { return b instanceof VillagePartGroup && is((VillagePartGroup)b); }
 	
-	public boolean is(VillagePartGroup b) { return b.regName.equals(regName); }
+	public boolean is(VillagePartGroup b) { return b.regName.equals(this.regName); }
 	
 	public boolean equalsAny(Object... array)
 	{

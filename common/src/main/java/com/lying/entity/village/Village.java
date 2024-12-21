@@ -80,10 +80,10 @@ public class Village
 		
 		// Prepare HOA
 		hoa = new HOA(List.of(), List.of(
-				Pair.of(5, new GoalHaveConnectors(3, t -> t.canLinkTo(HOVillageParts.STREET.get()))),
-				Pair.of(5, new GoalHaveConnectors(1, t -> t.canLinkTo(HOVillageParts.HOUSE.get()))),
+				Pair.of(5, new GoalHaveConnectors(3, t -> t.canLinkToGroup(HOVillagePartGroups.STREET.get()))),
+				Pair.of(5, new GoalHaveConnectors(1, t -> t.canLinkToGroup(HOVillagePartGroups.HOUSE.get()))),
 				Pair.of(1, GoalTypeMinimum.ofType(HOVillageParts.STREET, 1)),
-				Pair.of(10, GoalTypeMinimum.ofType(HOVillageParts.HOUSE, VillageModel::residentPop)),
+				Pair.of(10, GoalTypeMinimum.ofGroup(HOVillagePartGroups.HOUSE, VillageModel::residentPop)),
 				Pair.of(10, GoalTypeMinimum.ofGroup(HOVillagePartGroups.WORK, m -> m.residentsOfType(Resident.WORKER))),
 				Pair.of(6, new GoalWorkstationDiversity())
 				));

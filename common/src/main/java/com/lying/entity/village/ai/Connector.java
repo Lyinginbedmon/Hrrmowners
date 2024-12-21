@@ -4,7 +4,6 @@ import java.util.Optional;
 
 import org.jetbrains.annotations.Nullable;
 
-import com.lying.entity.village.VillagePart;
 import com.lying.entity.village.VillagePartGroup;
 import com.lying.init.HOVillagePartGroups;
 
@@ -47,11 +46,6 @@ public class Connector
 		return (new Box(pos)).expand(2);
 	}
 	
-	public boolean linksTo(Connector b)
-	{
-		return b.facing == facing.getOpposite() && canLinkToGroup(b.partGroup());
-	}
-	
 	public boolean equals(Connector b)
 	{
 		return 
@@ -64,26 +58,15 @@ public class Connector
 	/** Returns the VillagePartGroup that this connector primarily connects to */
 	public VillagePartGroup partGroup() { return HOVillagePartGroups.byID(partID); }
 	
-	/** Returns true if this connector can connect to a recipient connector for the given type(s) */
-	public boolean canLinkTo(VillagePart... set)
+	public boolean canLinkTo(Connector b)
 	{
-		VillagePartGroup type = partGroup();
-		if(type == null)
-			return true;
-		
-		for(VillagePart t : set)
-			if(t == null || canLinkToGroup(t.group()))
-				return true;
-		return false;
+		return b.facing == facing.getOpposite() && canLinkToGroup(b.partGroup());
 	}
 	
 	public boolean canLinkToGroup(VillagePartGroup group)
 	{
-		VillagePartGroup type = partGroup();
-		if(type == null)
-			return true;
-		
-		return group == null || group.canConnectTo(type);
+		VillagePartGroup type;
+		return group == null || (type = partGroup()) == null || type.canConnectTo(group);
 	}
 	
 	public NbtCompound toNbt()
