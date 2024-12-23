@@ -14,10 +14,11 @@ import com.lying.block.entity.NestBlockEntity;
 import com.lying.entity.SurinaEntity;
 import com.lying.entity.village.ai.Connector;
 import com.lying.entity.village.ai.HOA;
+import com.lying.entity.village.ai.HOAFullScan;
 import com.lying.entity.village.ai.action.Action;
 import com.lying.entity.village.ai.action.ActionPlacePart;
-import com.lying.entity.village.ai.goal.GoalHaveConnectors;
-import com.lying.entity.village.ai.goal.GoalTypeMinimum;
+import com.lying.entity.village.ai.goal.GoalOpenConnectors;
+import com.lying.entity.village.ai.goal.GoalPartMinimum;
 import com.lying.entity.village.ai.goal.GoalWorkstationDiversity;
 import com.lying.init.HOBlockEntityTypes;
 import com.lying.init.HOVillagePartGroups;
@@ -79,18 +80,17 @@ public class Village
 		biome = biomeIn;
 		
 		// Prepare HOA
-		hoa = new HOA(List.of(), List.of(
-				Pair.of(5, new GoalHaveConnectors(3, t -> t.canLinkToGroup(HOVillagePartGroups.STREET.get()))),
-				Pair.of(5, new GoalHaveConnectors(1, t -> t.canLinkToGroup(HOVillagePartGroups.HOUSE.get()))),
-				Pair.of(1, GoalTypeMinimum.ofType(HOVillageParts.STREET, 1)),
-				Pair.of(10, GoalTypeMinimum.ofGroup(HOVillagePartGroups.HOUSE, VillageModel::residentPop)),
-				Pair.of(10, GoalTypeMinimum.ofGroup(HOVillagePartGroups.WORK, m -> m.residentsOfType(Resident.WORKER))),
-				Pair.of(6, new GoalWorkstationDiversity())
-				));
+		hoa = new HOAFullScan(List.of(), List.of(
+				Pair.of(5, new GoalOpenConnectors(3, t -> t.canLinkToGroup(HOVillagePartGroups.STREET.get()))),
+				Pair.of(5, new GoalOpenConnectors(1, t -> t.canLinkToGroup(HOVillagePartGroups.HOUSE.get()))),
+				Pair.of(6, new GoalWorkstationDiversity()),
+				Pair.of(1, GoalPartMinimum.ofType(HOVillageParts.STREET, 1)),
+				Pair.of(10, GoalPartMinimum.ofGroup(HOVillagePartGroups.HOUSE, VillageModel::residentPop, biome)),
+				Pair.of(10, GoalPartMinimum.ofGroup(HOVillagePartGroups.WORK, m -> m.residentsOfType(Resident.WORKER), biome)))
+				);
 		hoa.addAxiom(m -> !m.cannotExpand());
-		
-		for(VillagePart type : HOVillageParts.values())
-			hoa.addAction(new ActionPlacePart(type, biome));
+		hoa.addAction(new ActionPlacePart(HOVillageParts.STREET.get(), biome));
+		hoa.addAction(new ActionPlacePart(HOVillageParts.CORNER.get(), biome));
 	}
 	
 	public UUID id() { return this.id; }

@@ -52,7 +52,7 @@ public class ActionIncConnector extends Action
 		return action.registryName().equals(registryName()) || action instanceof ActionIncConnector && ((ActionIncConnector)action).mode == mode;
 	}
 	
-	public boolean consider(VillageModel model, ServerWorld world)
+	public boolean tryApplyTo(VillageModel model, ServerWorld world)
 	{
 		model.incSelectedConnector(mode ? 1 : -1);
 		return true;

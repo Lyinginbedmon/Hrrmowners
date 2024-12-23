@@ -4,9 +4,15 @@ import com.lying.entity.village.VillageModel;
 import com.lying.entity.village.VillagePart;
 import com.lying.init.HOVillagePartGroups;
 import com.lying.init.HOVillageParts;
+import com.lying.reference.Reference;
 
-public class GoalWorkstationDiversity implements Goal
+public class GoalWorkstationDiversity extends Goal
 {
+	public GoalWorkstationDiversity()
+	{
+		super(Reference.ModInfo.prefix("workstation_diversity"));
+	}
+	
 	public float satisfaction(VillageModel model)
 	{
 		// Total number of workstations
@@ -14,7 +20,7 @@ public class GoalWorkstationDiversity implements Goal
 		
 		// If we only have at most 1 workstation, balance is irrelevant
 		if(total < 2)
-			return 0F;
+			return 1F;
 		
 		// Number of distinct types of workstation of which we have at least 1
 		int variety = 0;

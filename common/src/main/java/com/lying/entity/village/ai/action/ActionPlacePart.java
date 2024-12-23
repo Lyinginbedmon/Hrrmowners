@@ -6,6 +6,7 @@ import java.util.function.Predicate;
 
 import org.slf4j.Logger;
 
+import com.google.common.collect.Lists;
 import com.lying.Hrrmowners;
 import com.lying.entity.SurinaEntity;
 import com.lying.entity.village.Village;
@@ -70,8 +71,128 @@ public class ActionPlacePart extends Action
 	public boolean consider(VillageModel model, ServerWorld world)
 	{
 		placeToAdd = model.firstConnectorMatching(connectorPredicate);
-		(partToAdd = getSuitablePart(model, world)).ifPresent(p -> model.addPart(p, world, false));
-		return placeToAdd.isPresent() && partToAdd.isPresent();
+		partToAdd = getAnySuitablePart(model, world);
+		return tryApplyTo(model, world);
+	}
+	
+	public boolean tryApplyTo(VillageModel model, ServerWorld world)
+	{
+		return placeToAdd.isPresent() && partToAdd.isPresent() && model.addPart(partToAdd.get(), world, false);
+	}
+	
+	public List<Action> getViablePermutations(VillageModel model, ServerWorld world)
+	{
+		List<Action> viable = Lists.newArrayList();
+		
+		Optional<Connector> place = model.firstConnectorMatching(connectorPredicate);
+		if(place.isEmpty())
+			return List.of();
+		
+		placeToAdd = place;
+		
+		// Examine all entries in the pool and log all rotations of them that can mate with the selected connector
+		List<StructurePoolElement> options = getStructures(place, world);
+		if(!options.isEmpty())
+		{
+			BlockRotation[] rotations = BlockRotation.values();
+			BlockRotation baseRotation = rotations[rand.nextInt(rotations.length)];
+			Connector connector = place.get();
+//			int index = 0, count = options.size();
+			for(StructurePoolElement option : options)
+			{
+//				LOGGER.info(" # Evaluating {} structure {} of {}", type.asString(), ++index, count);
+				for(int i=0; i<rotations.length; i++)
+				{
+					BlockRotation rotation = rotations[(baseRotation.ordinal() + i)%rotations.length];
+					validateAgainstModel(option, type, connector, rotation, model, world).ifPresent(s -> 
+					{
+//						LOGGER.info(" # # Permutation viable with {} rotation", rotation.asString());
+						partToAdd = Optional.of(s);
+						viable.add(copy());
+					});
+				}
+			}
+		}
+		
+		return viable;
+	}
+	
+	private Optional<VillagePartInstance> getAnySuitablePart(VillageModel model, ServerWorld world)
+	{
+		Optional<Connector> place = model.firstConnectorMatching(connectorPredicate);
+		
+		// Examine all entries in the pool with all rotations until we find one that can mate with the selected connector
+		List<StructurePoolElement> options = getStructures(place, world);
+		if(options.isEmpty())
+			return Optional.empty();
+		
+		BlockRotation[] rotations = BlockRotation.values();
+		BlockRotation baseRotation = rotations[rand.nextInt(rotations.length)];
+		
+		Connector connector = place.get();
+//		int index = 0, count = options.size();
+		for(StructurePoolElement option : options)
+		{
+//			LOGGER.info(" # Evaluating {} structure {} of {}", type.asString(), ++index, count);
+			for(int i=0; i<rotations.length; i++)
+			{
+				BlockRotation rotation = rotations[(baseRotation.ordinal() + i)%rotations.length];
+				Optional<VillagePartInstance> validated = validateAgainstModel(option, type, connector, rotation, model, world);
+				if(validated.isPresent())
+					return validated;
+			}
+		}
+		
+		return Optional.empty();
+	}
+	
+	private static Optional<VillagePartInstance> validateAgainstModel(StructurePoolElement structure, VillagePart type, Connector connector, BlockRotation rotation, VillageModel model, ServerWorld world)
+	{
+		Optional<VillagePartInstance> partOpt = Village.makeNewPart(structure, type, connector.linkPos(), rotation, world.getStructureTemplateManager());
+		if(partOpt.isEmpty())
+			return Optional.empty();
+		
+		// Find a connector in the part that can mate to the given connector, and apply the necessary translation
+		VillagePartInstance part = partOpt.get();
+		Optional<BlockPos> connectOffset = part.getOffsetToLinkTo(connector);
+		if(connectOffset.isPresent())
+		{
+			part.translate(connectOffset.get(), world.getStructureTemplateManager());
+			
+			// Ensure the part won't intersect with another part in this position
+			if(!model.wouldIntersect(part))
+				return Optional.of(part);
+		}
+		return Optional.empty();
+	}
+	
+	private List<StructurePoolElement> getStructures(Optional<Connector> connectOpt, ServerWorld world)
+	{
+		resetRand();
+		if(connectOpt.isEmpty())
+		{
+			LOGGER.error("Place part action checked after canTakeAction returned true, but no connector available");
+			return List.of();
+		}
+		
+		Connector connector = connectOpt.get();
+		if(!connector.canLinkToGroup(type.group()))
+		{
+			LOGGER.error("Connector for {} cannot link to part of type {}", connector.partGroup().asString(), type.asString());
+			return List.of();
+		}
+		
+		DynamicRegistryManager registryManager = world.getRegistryManager();
+		Registry<StructurePool> registry = registryManager.get(RegistryKeys.TEMPLATE_POOL);
+		StructurePoolAliasLookup aliasLookup = StructurePoolAliasLookup.create(List.of(), connector.linkPos(), world.getSeed());
+		Optional<StructurePool> optPool = Optional.of(poolKey).flatMap(key -> registry.getOrEmpty(aliasLookup.lookup(key)));
+		if(optPool.isEmpty())
+		{
+			LOGGER.error("Structure pool {} is empty", poolKey.getValue().toString());
+			return List.of();
+		}
+		
+		return optPool.get().getElementIndicesInRandomOrder(rand).stream().filter(s -> s.getType() != StructurePoolElementType.EMPTY_POOL_ELEMENT).toList();
 	}
 	
 	protected Result enact(VillageModel model, Village village, ServerWorld world)
@@ -132,68 +253,6 @@ public class ActionPlacePart extends Action
 		partToAdd.get().placeInWorld((ServerWorld)resident.getWorld());
 		setPhase(Phase.PINGED);
 		return true;
-	}
-	
-	private Optional<VillagePartInstance> getSuitablePart(VillageModel model, ServerWorld world)
-	{
-		resetRand();
-		BlockRotation[] rotations = BlockRotation.values();
-		BlockRotation baseRotation = rotations[rand.nextInt(rotations.length)];
-		Optional<Connector> connectOpt = model.firstConnectorMatching(connectorPredicate);
-		if(connectOpt.isEmpty())
-		{
-			LOGGER.error("Place part action checked after canTakeAction returned true, but no connector available");
-			return Optional.empty();
-		}
-		
-		Connector connector = connectOpt.get();
-		if(!connector.canLinkToGroup(type.group()))
-		{
-			LOGGER.error("Connector for {} cannot link to part of type {}", connector.partGroup().asString(), type.asString());
-			return Optional.empty();
-		}
-		
-		DynamicRegistryManager registryManager = world.getRegistryManager();
-		Registry<StructurePool> registry = registryManager.get(RegistryKeys.TEMPLATE_POOL);
-		StructurePoolAliasLookup aliasLookup = StructurePoolAliasLookup.create(List.of(), connector.linkPos(), world.getSeed());
-		Optional<StructurePool> optPool = Optional.of(poolKey).flatMap(key -> registry.getOrEmpty(aliasLookup.lookup(key)));
-		if(optPool.isEmpty())
-		{
-			LOGGER.error("Structure pool {} is empty", poolKey.getValue().toString());
-			return Optional.empty();
-		}
-		
-		// Examine all entries in the pool with all rotations until we find one that can mate with the selected connector
-		StructurePool pool = optPool.get();
-		int index = 0, count = pool.getElementCount();
-		for(StructurePoolElement option : pool.getElementIndicesInRandomOrder(rand))
-		{
-			LOGGER.info(" # Evaluating {} structure {} of {}", type.asString(), ++index, count);
-			if(option.getType() == StructurePoolElementType.EMPTY_POOL_ELEMENT)
-			{
-				LOGGER.warn("Skipped empty pool element");
-				continue;
-			}
-			
-			for(int i=0; i<rotations.length; i++)
-			{
-				BlockRotation rotation = rotations[(baseRotation.ordinal() + i)%rotations.length];
-				Optional<VillagePartInstance> partOpt = Village.makeNewPart(option, type, connector.linkPos(), rotation, world.getStructureTemplateManager());
-				VillagePartInstance part = partOpt.get();
-				
-				Optional<BlockPos> connectOffset = part.getOffsetToLinkTo(connector);
-				if(connectOffset.isPresent())
-				{
-					part.translate(connectOffset.get(), world.getStructureTemplateManager());
-					
-					// Ensure the part won't intersect with another part in this position
-					if(!model.wouldIntersect(part))
-						return Optional.of(part);
-				}
-			}
-		}
-		
-		return Optional.empty();
 	}
 	
 	private static enum Phase

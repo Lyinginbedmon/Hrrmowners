@@ -25,7 +25,7 @@ public class ActionRandConnector extends Action
 		return actions.isEmpty() || !actions.getLast().registryName().equals(registryName());
 	}
 	
-	public boolean consider(VillageModel model, ServerWorld world)
+	public boolean tryApplyTo(VillageModel model, ServerWorld world)
 	{
 		model.selectRandomConnector(rand);
 		return true;

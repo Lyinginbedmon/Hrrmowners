@@ -1,11 +1,13 @@
 package com.lying.entity.village.ai;
 
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -22,20 +24,18 @@ import com.lying.entity.village.ai.goal.Goal;
 import com.mojang.datafixers.util.Pair;
 
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.Identifier;
 
 /**
  * Hrrmowners Association (tm)<br>
  * A GOAP system for generating action sequences to satisfy its given goals
  */
-public class HOA
+public abstract class HOA
 {
-	private static final Logger LOGGER = Hrrmowners.LOGGER;
-	private static final Comparator<Action> ACTION_SORTER = (a, b) -> a.cost() < b.cost() ? -1 : a.cost() > b.cost() ? 1 : 0;
-	private static long searchStart;
+	protected static final Logger LOGGER = Hrrmowners.LOGGER;
+	protected static final int ITERATION_CAP = 100;
+	protected static long searchStart;
 	
-	private final List<Action> actions = Lists.newArrayList();
-	
-	private final List<Pair<Integer,Goal>> goals = Lists.newArrayList();
 	private final Comparator<SearchEntry> stateComparator = (a, b) -> 
 	{
 		float satA = a.totalValue(this::goalSatisfaction);
@@ -48,17 +48,15 @@ public class HOA
 		return lenA < lenB ? -1 : lenA > lenB ? 1 : 0;	
 	};
 	
+	/** "Evergreen" actions that are not controlled by goal satisfaction */
+	private final List<Action> actions = Lists.newArrayList();
 	private Predicate<VillageModel> axioms = Predicates.alwaysTrue();
+	private final List<Pair<Integer,Goal>> goals = Lists.newArrayList();
 	
 	private List<Action> currentPlan = Lists.newArrayList();
 	private Action currentAction = null;
 	
-	public HOA()
-	{
-		this(List.of(), List.of());
-	}
-	
-	public HOA(List<Action> actionsIn, List<Pair<Integer,Goal>> goalsIn)
+	protected HOA(List<Action> actionsIn, List<Pair<Integer,Goal>> goalsIn)
 	{
 		actionsIn.forEach(a -> addAction(a));
 		goalsIn.forEach(g -> addGoal(g));
@@ -69,35 +67,34 @@ public class HOA
 	 * The most common axiom is that the model must have at least one open connector, to allow for further construction.<br>
 	 * The planner will never take actions which result in a model that fails any axiom
 	 */
-	public void addAxiom(Predicate<VillageModel> axiomIn)
+	public final void addAxiom(Predicate<VillageModel> axiomIn)
 	{
 		axioms = axioms.and(axiomIn);
 	}
 	
-	public void addAction(Action actionIn)
+	public final void addAction(Action actionIn)
 	{
 		actions.add(actionIn);
-		actions.sort(ACTION_SORTER);
 	}
 	
-	public void addGoal(Goal goalIn)
+	public final void addGoal(Goal goalIn)
 	{
 		addGoal(1, goalIn);
 	}
 	
-	public void addGoal(int weightIn, Goal goalIn)
+	public final void addGoal(int weightIn, Goal goalIn)
 	{
 		addGoal(Pair.of(weightIn, goalIn));
 	}
 	
-	public void addGoal(Pair<Integer, Goal> goalIn)
+	public final void addGoal(Pair<Integer, Goal> goalIn)
 	{
 		goals.add(goalIn);
 	}
 	
-	public boolean hasPlan() { return !currentPlan.isEmpty() || currentAction != null; }
+	public final boolean hasPlan() { return !currentPlan.isEmpty() || currentAction != null; }
 	
-	public void setPlan(Plan planIn)
+	public final void setPlan(Plan planIn)
 	{
 		clearPlan();
 		
@@ -111,13 +108,13 @@ public class HOA
 			currentPlan.addAll(newPlan);
 	}
 	
-	public void clearPlan()
+	public final void clearPlan()
 	{
 		currentAction = null;
 		currentPlan.clear();
 	}
 	
-	public void tickPlan(ServerWorld world, Village village)
+	public final void tickPlan(ServerWorld world, Village village)
 	{
 		if(!hasPlan())
 			return;
@@ -148,44 +145,47 @@ public class HOA
 		}
 	}
 	
-	protected void invalidate(Village village)
+	protected final void invalidate(Village village)
 	{
 		if(currentAction != null)
 			LOGGER.info("## HOA plan invalidated with action {} at {} ##", currentAction.registryName().toString(), village.model().getCenter().get().pivot().toShortString());
 		clearPlan();
 	}
 	
-	public Optional<Action> currentAction() { return this.currentAction == null ? Optional.empty() : Optional.of(this.currentAction); }
+	public final Optional<Action> currentAction() { return this.currentAction == null ? Optional.empty() : Optional.of(this.currentAction); }
 	
 	/** Returns true if the given model evaluates to 100% goal satisfaction */
-	public boolean meetsObjectives(VillageModel model)
+	public final boolean meetsObjectives(VillageModel model)
 	{
 		return goals.isEmpty() || goalSatisfaction(model) == 1F;
 	}
 	
+	public final boolean testAxioms(VillageModel model) { return axioms.test(model); }
+	
 	/** Returns the overal goal satisfaction of the given model */
-	public float goalSatisfaction(VillageModel model)
+	public final float goalSatisfaction(VillageModel model)
 	{
 		if(goals.isEmpty())
 			return 1F;
 		
-		float total = 0F;
-		float weightSum = 0F;
+		float total = 0F, weightSum = 0F;
 		for(Pair<Integer, Goal> goal : goals)
 		{
 			float weight = goal.getFirst();
-			total += weight * goal.getSecond().satisfaction(model);
+			float value = goal.getSecond().satisfaction(model);
+			total += weight * value;
 			weightSum += weight;
 		}
 		return total / weightSum;
 	}
 	
-	public boolean tryGeneratePlan(final VillageModel model, final Village village, ServerWorld world)
+	public final boolean tryGeneratePlan(final VillageModel model, final Village village, ServerWorld world)
 	{
 		// Copy the village census into the village model, so the planner can track census-dependent goals
 		model.copyCensus(village);
 		
-		/** No actions available, presume we cannot make any plan */
+		/** No actions are currently available, presume we cannot make any plan */
+		Collection<Action> actions = getOptions(model);
 		if(actions.isEmpty())
 		{
 			LOGGER.info("# HOA has no actions available to it");
@@ -224,9 +224,9 @@ public class HOA
 	}
 	
 	@Nullable
-	private Plan findSatisfyingPlan(final VillageModel model, ServerWorld world)
+	protected Plan findSatisfyingPlan(final VillageModel model, ServerWorld world)
 	{
-		if(!axioms.test(model))
+		if(!testAxioms(model))
 		{
 			LOGGER.info(" # Current village model fails one or more axioms, cannot make plan");
 			return null;
@@ -243,57 +243,37 @@ public class HOA
 		plansToCheck.add(initial);
 		
 		int iteration = 0;
-		while(iteration < 100 && !plansToCheck.isEmpty())
+		while(iteration < ITERATION_CAP && !plansToCheck.isEmpty())
 		{
+			if(plansToCheck.size() > 1)
+				plansToCheck.sort(stateComparator);
+			
 			// The current best plan
 			SearchEntry plan = plansToCheck.remove(0);
 			LOGGER.info(" # Trialling plan {} with {} alternatives, satisfaction {}", ++iteration, plansToCheck.size(), goalSatisfaction(plan.state()));
 			
-			// List of plans generated from our current best
-			List<SearchEntry> nextCheck = Lists.newArrayList();
-			VillageModel presentState = plan.state();
-			if(!axioms.test(presentState))
-			{
-				// If we somehow logged a model that fails our axioms, refund this iteration
-				LOGGER.warn(" # # Logged village model fails axioms, refunding iteration");
-				iteration--;
-				continue;
-			}
-			
-			// Iterate from our current best plan to identify potential next steps
-			for(Action action : actions.stream().filter(a -> a.canTakeAction(presentState) && a.canAddToPlan(plan.plan(), presentState)).toList())
-			{
-				action.setSeed(world.random.nextLong());	// TODO Reduce reliance on RNG during planning
-				
-				// Discard any action that isn't applicable for some reason or that results in the village model failing axioms
-				VillageModel modelAfter = presentState.copy(world);
-				if(!action.consider(modelAfter, world) || !axioms.test(modelAfter))
-					continue;
-				
-				// The state of the plan after we add this action to it
-				Plan planAfter = plan.plan().copy().add(action.copy());
-				
-				// If we find a plan that satisfies all objectives 100%, exit search immediately
-				if(meetsObjectives(modelAfter))
-					return planAfter;
-				
-				nextCheck.add(new SearchEntry(modelAfter, planAfter));
-			}
-			
-			// Log each new state in the state map
-			// Ignore any plans that reach a previously-calculated state by a less efficient means
-			for(SearchEntry p : nextCheck)
-				if(stateMap.put(p.state(), p.plan()))
-					plansToCheck.add(p);
-			
-			// Sort plans by overall goal satisfaction to prioritise checking better plans first
-			plansToCheck.sort(stateComparator);
+			Plan result = examineOptions(plan, s -> { if(stateMap.put(s)) plansToCheck.add(s); }, world);
+			if(result != null)
+				return result;
 		}
 		
 		return stateMap.getBestPlanFor(this::goalSatisfaction);
 	}
 	
-	private static record SearchEntry(VillageModel state, Plan plan)
+	/** Returns a list of all actions available to the given model, based on objectives */
+	protected final Collection<Action> getOptions(VillageModel model)
+	{
+		Map<Identifier, Action> options = new HashMap<>();
+		actions.stream().filter(a -> a.canTakeAction(model)).forEach(a -> options.put(a.registryName(), a));
+		goals.forEach(g -> g.getSecond().getActions(model).stream().filter(a -> a.canTakeAction(model)).forEach(a -> options.put(a.registryName(), a)));
+		return options.values();
+	}
+	
+	/** Returns a plan that meets all objectives, or null if more evaluation is needed */
+	@Nullable
+	protected abstract Plan examineOptions(SearchEntry checking, Consumer<SearchEntry> addToSearch, ServerWorld world);
+	
+	protected static record SearchEntry(VillageModel state, Plan plan)
 	{
 		public float totalValue(Function<VillageModel,Float> satisfaction)
 		{

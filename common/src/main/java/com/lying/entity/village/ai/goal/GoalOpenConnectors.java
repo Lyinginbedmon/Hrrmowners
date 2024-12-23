@@ -5,22 +5,23 @@ import java.util.function.Predicate;
 import com.google.common.base.Predicates;
 import com.lying.entity.village.VillageModel;
 import com.lying.entity.village.ai.Connector;
+import com.lying.reference.Reference;
 
 import net.minecraft.util.math.MathHelper;
 
-public class GoalHaveConnectors implements Goal
+public class GoalOpenConnectors extends Goal
 {
 	private final int count;
 	private final Predicate<Connector> predicate;
 	
-	public GoalHaveConnectors(int countIn)
+	public GoalOpenConnectors(int countIn)
 	{
-		count = Math.abs(countIn);
-		predicate = Predicates.alwaysTrue();
+		this(countIn, Predicates.alwaysTrue());
 	}
 	
-	public GoalHaveConnectors(int countIn, Predicate<Connector> qualifierIn)
+	public GoalOpenConnectors(int countIn, Predicate<Connector> qualifierIn)
 	{
+		super(Reference.ModInfo.prefix("open_connectors"));
 		count = Math.abs(countIn);
 		predicate = qualifierIn;
 	}

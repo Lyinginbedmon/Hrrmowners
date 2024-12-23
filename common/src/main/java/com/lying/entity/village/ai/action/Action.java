@@ -1,5 +1,6 @@
 package com.lying.entity.village.ai.action;
 
+import java.util.List;
 import java.util.function.Predicate;
 
 import com.lying.entity.SurinaEntity;
@@ -54,7 +55,13 @@ public abstract class Action
 	public boolean canAddToPlan(Plan plan, VillageModel model) { return true; }
 	
 	/** Applies this action to the given model during planning, returning true if successful */
-	public abstract boolean consider(VillageModel model, ServerWorld world);
+	public boolean consider(VillageModel model, ServerWorld world) { return tryApplyTo(model, world); }
+	
+	/** Attempts to apply this action to the given model, usually during planning */
+	public abstract boolean tryApplyTo(VillageModel model, ServerWorld world);
+	
+	/** Returns a list of all viable permutations of this action that can be applied to the given model */
+	public List<Action> getViablePermutations(VillageModel model, ServerWorld world) { return consider(model, world) ? List.of(copy()) : List.of(); }
 	
 	/** Applies this action to the given model during execution */
 	public final Result enactAction(VillageModel model, Village village, ServerWorld world)

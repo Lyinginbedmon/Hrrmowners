@@ -55,6 +55,9 @@ public class VillageModel
 	/** Returns true if the two models are functionally equivalent.<br>They may still differ in arrangement or population. */
 	public static boolean isEquivalent(VillageModel modelA, VillageModel modelB)
 	{
+		if(modelA.connectorIndex != modelB.connectorIndex)
+			return false;
+		
 		if(modelA.connectors.size() == modelB.connectors.size())
 		{
 			for(Connector connector : modelA.connectors)
