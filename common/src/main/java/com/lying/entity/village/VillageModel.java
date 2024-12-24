@@ -38,6 +38,8 @@ public class VillageModel
 	@SuppressWarnings("unused")
 	private static final Logger LOGGER = Hrrmowners.LOGGER;
 	
+	private Map<Identifier, Float> goalSatisfaction = new HashMap<>();
+	
 	/* Census data representing the village's population */
 	private Map<Resident, Integer> census = new HashMap<>();
 	private int totalPop = 0;
@@ -79,6 +81,11 @@ public class VillageModel
 		return true;
 	}
 	
+	/** Returns the last cached satisfaction score for this model with the given goal ID, or -1F if it hasn't been cached */
+	public float getSatisfaction(Identifier id) { return goalSatisfaction.getOrDefault(id, -1F); }
+	
+	public void cacheSatisfaction(Identifier id, float val) { goalSatisfaction.put(id, val); }
+	
 	/** Tally of all residents */
 	public int population() { return totalPop; }
 	
@@ -93,6 +100,7 @@ public class VillageModel
 			totalPop += count - residentsOfType(type);
 		
 		census.put(type, count);
+		markDirty();
 	}
 	
 	public void addResident(Resident type, int count)
@@ -101,6 +109,7 @@ public class VillageModel
 		count = MathHelper.clamp(count, -tally, Integer.MAX_VALUE);
 		census.put(type, tally + count);
 		totalPop += count;
+		markDirty();
 	}
 	
 	public void copyCensus(Village village)
@@ -125,7 +134,10 @@ public class VillageModel
 	
 	public VillageModel copy(ServerWorld world)
 	{
-		return (new VillageModel()).readFromNbt(writeToNbt(new NbtCompound(), world), world);
+		VillageModel clone = new VillageModel();
+		clone.readFromNbt(writeToNbt(new NbtCompound(), world), world);
+		goalSatisfaction.entrySet().forEach(e -> clone.goalSatisfaction.put(e.getKey(), e.getValue()));
+		return clone;
 	}
 	
 	private void clear()
@@ -134,6 +146,7 @@ public class VillageModel
 		connectors.clear();
 		census.clear();
 		totalPop = 0;
+		markDirty();
 	}
 	
 	public NbtCompound writeToNbt(NbtCompound nbt, ServerWorld world)
@@ -232,6 +245,7 @@ public class VillageModel
 		connectorIndex += inc;
 		if(connectorIndex < 0)
 			connectorIndex = 0;
+		markDirty();
 	}
 	
 	public int connectorIndex() { return this.connectorIndex; }
@@ -242,6 +256,7 @@ public class VillageModel
 			return;
 		
 		connectorIndex = rand.nextBetween(0, openConnectors());
+		markDirty();
 	}
 	
 	public int getTallyOf(VillagePart type) { return tally.getOrDefault(type.registryName(), 0); }
@@ -278,41 +293,13 @@ public class VillageModel
 		if(parts.stream().anyMatch(part2 -> part2.id.equals(part.id) || part2.bounds().intersects(part.bounds())))
 			return false;
 		
-		// Selected connector, prior to updating the list of available connectors
-//		Optional<Connector> lastConnector = selectedConnector();
-		
 		parts.add(part);
 		tally.put(part.type.registryName(), tally.getOrDefault(part.type.registryName(), 0) + 1);
 		
 		recacheConnectors(shouldNotify);
+		markDirty();
 		if(shouldNotify)
 			notifyObservers(world.getRegistryKey());
-		
-		// Move selected connector the closest viable connector
-//		if(lastConnector.isPresent())
-//		{
-//			BlockPos pos = lastConnector.get().pos;
-//			int closestInd = 0;
-//			double closestDist = Double.MAX_VALUE;
-//			for(int index = 0; index < connectors.size(); index++)
-//			{
-//				double dist = pos.getSquaredDistance(connectors.get(index).pos);
-//				if(dist < closestDist)
-//				{
-//					closestDist = dist;
-//					closestInd = index;
-//				}
-//			}
-//			connectorIndex = closestInd;
-//		}
-		
-		// Sort connectors by distance to placed part, this encourages building in the same general area
-		BlockPos origin = part.pivot();
-		connectors.sort((a, b) -> {
-			double disA = a.pos.getSquaredDistance(origin);
-			double disB = b.pos.getSquaredDistance(origin);
-			return disA < disB ? -1 : disA > disB ? 1 : 0;
-		});
 		
 		return true;
 	}
@@ -335,6 +322,16 @@ public class VillageModel
 			}
 			remove.forEach(info -> part.lockConnectorAt(info.pos, shouldNotify));
 		}
+		
+		// Sort connectors by distance to village core, this encourages building close to the queen
+		BlockPos core = getCenter().get().pivot();
+		connectors.sort((c1,c2) -> 
+		{
+			double d1 = c1.pos.getSquaredDistance(core);
+			double d2 = c2.pos.getSquaredDistance(core);
+			return d1 < d2 ? -1 : d1 > d2 ? 1 : 0;
+		});
+		markDirty();
 	}
 	
 	public void erasePart(VillagePartInstance part, ServerWorld world, RegistryKey<World> dimension)
@@ -346,6 +343,7 @@ public class VillageModel
 				for(int y=part.min().getY(); y<=part.max().getY(); y++)
 					world.setBlockState(new BlockPos(x, y, z), Blocks.AIR.getDefaultState());
 		
+		markDirty();
 		if(!comps.isEmpty())
 			Hrrmowners.forAllPlayers(player -> 
 			{
@@ -363,6 +361,8 @@ public class VillageModel
 	{
 		parts.forEach(part -> part.notifyObservers(dimension));
 	}
+	
+	protected void markDirty() { goalSatisfaction.clear(); }
 	
 	public static NbtList connectorsToNbt(List<Connector> connectors)
 	{

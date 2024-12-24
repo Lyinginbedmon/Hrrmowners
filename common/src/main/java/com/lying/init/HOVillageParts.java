@@ -25,7 +25,7 @@ public class HOVillageParts
 {
 	private static final Map<Identifier, Supplier<VillagePart>> VALUES = new HashMap<>();
 	
-	public static final Supplier<VillagePart> CENTER	= register(prefix("center"), id -> new VillagePart(id, HOVillagePartGroups.CENTER.get(), 5F, biome -> SurinaVillageData.DESERT_CENTER_KEY));
+	public static final Supplier<VillagePart> CENTER	= register(prefix("center"), id -> new VillagePart(id, HOVillagePartGroups.CENTER.get(), 15F, biome -> SurinaVillageData.DESERT_CENTER_KEY));
 	
 	public static final Supplier<VillagePart> HOUSE		= register(prefix("house"), id -> new VillagePart(id, HOVillagePartGroups.HOUSE.get(), 2F, biome -> SurinaVillageData.DESERT_HOUSE_KEY));
 	
@@ -46,7 +46,7 @@ public class HOVillageParts
 	
 	private static Function<Identifier, VillagePart> street(Function<RegistryKey<Biome>, RegistryKey<StructurePool>> poolKeyIn)
 	{
-		return id -> new VillagePart(id, HOVillagePartGroups.STREET.get(), 10F, poolKeyIn);
+		return id -> new VillagePart(id, HOVillagePartGroups.STREET.get(), 5, poolKeyIn);
 	}
 	
 	private static Function<Identifier, VillagePart> workstation(float buildCost, Function<RegistryKey<Biome>, RegistryKey<StructurePool>> poolKeyIn)

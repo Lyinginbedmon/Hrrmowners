@@ -55,7 +55,7 @@ public class GoalPartMinimum extends Goal
 		count = countIn;
 	}
 	
-	public float satisfaction(VillageModel model)
+	public float evaluate(VillageModel model)
 	{
 		float target = Math.max(count.apply(model), 0);
 		return target == 0F ? 1F: MathHelper.clamp((float)model.getTallyMatching(predicate) / target, 0F, 1F);

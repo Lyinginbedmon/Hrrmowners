@@ -1,5 +1,6 @@
 package com.lying.entity.village.ai.action;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -16,6 +17,7 @@ import net.minecraft.util.math.random.Random;
 
 public abstract class Action
 {
+	public static final Comparator<Action> COST_SORT = (a1,a2) -> a1.cost() < a2.cost() ? -1 : a1.cost() > a2.cost() ? 1 : 0;
 	protected static final Predicate<SurinaEntity> IS_FUNCTIONAL = s -> s.isAlive() && !s.isAiDisabled() && !s.isRemoved() && !s.isBaby();
 	protected static final Predicate<SurinaEntity> CAN_PERFORM_TASK = IS_FUNCTIONAL.and(s -> s.getTaskManager().canPerformHOATask());
 	

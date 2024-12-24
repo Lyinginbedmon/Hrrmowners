@@ -13,7 +13,7 @@ public class GoalWorkstationDiversity extends Goal
 		super(Reference.ModInfo.prefix("workstation_diversity"));
 	}
 	
-	public float satisfaction(VillageModel model)
+	public float evaluate(VillageModel model)
 	{
 		// Total number of workstations
 		int total = model.getTallyMatching(i -> i.type.group() == HOVillagePartGroups.WORK.get());
@@ -24,6 +24,7 @@ public class GoalWorkstationDiversity extends Goal
 		
 		// Number of distinct types of workstation of which we have at least 1
 		int variety = 0;
+		
 		// Greatest number of any single type of workstation
 		float max = Float.MIN_VALUE;
 		for(VillagePart part : HOVillageParts.ofGroup(HOVillagePartGroups.WORK.get()))

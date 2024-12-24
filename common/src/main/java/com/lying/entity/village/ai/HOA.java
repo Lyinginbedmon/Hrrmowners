@@ -185,10 +185,9 @@ public abstract class HOA
 		model.copyCensus(village);
 		
 		/** No actions are currently available, presume we cannot make any plan */
-		Collection<Action> actions = getOptions(model);
-		if(actions.isEmpty())
+		if(getOptions(model).isEmpty())
 		{
-			LOGGER.info("# HOA has no actions available to it");
+			LOGGER.info("# HOA has no actions available to it in its current state");
 			setPlan(Plan.blank());
 			return false;
 		}
@@ -203,9 +202,8 @@ public abstract class HOA
 		
 		LOGGER.info("## HOA plan generation started ##");
 		LOGGER.info("#= Initial Status");
-		LOGGER.info("# Goal satisfaction {}", goalSatisfaction(model));
+		LOGGER.info("# Goal satisfaction {}%", floatToPercentile(goalSatisfaction(model)));
 		LOGGER.info("# Population {} ({} residents)", model.population(), model.residentPop());
-		LOGGER.info("# {} available actions", actions.size());
 		searchStart = System.currentTimeMillis();
 		Plan finalPlan = findSatisfyingPlan(model, world);
 		LOGGER.info("## HOA plan generation ended in {}ms ##", System.currentTimeMillis() - searchStart);
@@ -250,7 +248,7 @@ public abstract class HOA
 			
 			// The current best plan
 			SearchEntry plan = plansToCheck.remove(0);
-			LOGGER.info(" # Trialling plan {} with {} alternatives, satisfaction {}", ++iteration, plansToCheck.size(), goalSatisfaction(plan.state()));
+			LOGGER.info(" # Trialling plan {} with {} alternatives, satisfaction {}%", ++iteration, plansToCheck.size(), floatToPercentile(goalSatisfaction(plan.state())));
 			
 			Plan result = examineOptions(plan, s -> { if(stateMap.put(s)) plansToCheck.add(s); }, world);
 			if(result != null)
@@ -260,13 +258,22 @@ public abstract class HOA
 		return stateMap.getBestPlanFor(this::goalSatisfaction);
 	}
 	
+	public static float floatToPercentile(float val)
+	{
+		return ((int)(val * 10000)) * 0.01F;
+	}
+	
 	/** Returns a list of all actions available to the given model, based on objectives */
 	protected final Collection<Action> getOptions(VillageModel model)
 	{
 		Map<Identifier, Action> options = new HashMap<>();
 		actions.stream().filter(a -> a.canTakeAction(model)).forEach(a -> options.put(a.registryName(), a));
 		goals.forEach(g -> g.getSecond().getActions(model).stream().filter(a -> a.canTakeAction(model)).forEach(a -> options.put(a.registryName(), a)));
-		return options.values();
+		
+		List<Action> actions = Lists.newArrayList();
+		actions.addAll(options.values());
+		actions.sort(Action.COST_SORT);
+		return actions;
 	}
 	
 	/** Returns a plan that meets all objectives, or null if more evaluation is needed */

@@ -81,12 +81,12 @@ public class Village
 		
 		// Prepare HOA
 		hoa = new HOAFullScan(List.of(), List.of(
-				Pair.of(5, new GoalOpenConnectors(3, t -> t.canLinkToGroup(HOVillagePartGroups.STREET.get()))),
-				Pair.of(5, new GoalOpenConnectors(1, t -> t.canLinkToGroup(HOVillagePartGroups.HOUSE.get()))),
-				Pair.of(6, new GoalWorkstationDiversity()),
+				Pair.of(15, new GoalOpenConnectors(3, t -> t.canLinkToGroup(HOVillagePartGroups.STREET.get()))),
+				Pair.of(15, new GoalOpenConnectors(1, t -> t.canLinkToGroup(HOVillagePartGroups.HOUSE.get()))),
+				Pair.of(10, new GoalWorkstationDiversity()),
 				Pair.of(1, GoalPartMinimum.ofType(HOVillageParts.STREET, 1)),
 				Pair.of(10, GoalPartMinimum.ofGroup(HOVillagePartGroups.HOUSE, VillageModel::residentPop, biome)),
-				Pair.of(10, GoalPartMinimum.ofGroup(HOVillagePartGroups.WORK, m -> m.residentsOfType(Resident.WORKER), biome)))
+				Pair.of(6, GoalPartMinimum.ofGroup(HOVillagePartGroups.WORK, m -> m.residentsOfType(Resident.WORKER), biome)))
 				);
 		hoa.addAxiom(m -> !m.cannotExpand());
 		hoa.addAction(new ActionPlacePart(HOVillageParts.STREET.get(), biome));

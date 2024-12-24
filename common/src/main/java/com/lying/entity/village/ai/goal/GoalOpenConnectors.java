@@ -26,7 +26,7 @@ public class GoalOpenConnectors extends Goal
 		predicate = qualifierIn;
 	}
 	
-	public float satisfaction(VillageModel model)
+	public float evaluate(VillageModel model)
 	{
 		return count == 0 ? 1F: MathHelper.clamp(model.openConnectors(predicate) / count, 0F, 1F);
 	}
