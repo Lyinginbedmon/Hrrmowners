@@ -1,0 +1,211 @@
+{
+  "Trades": [
+    {
+      "level": 2,
+      "trades": [
+        {
+          "experience": 10,
+          "id": "minecraft:buy_item",
+          "maxUses": 12,
+          "price": 1,
+          "stack": {
+            "count": 4,
+            "id": "minecraft:iron_ingot"
+          }
+        },
+        {
+          "experience": 5,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.2,
+          "price": 36,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:bell"
+          }
+        },
+        {
+          "experience": 5,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.2,
+          "price": 1,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:chainmail_boots"
+          }
+        },
+        {
+          "experience": 5,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.2,
+          "price": 3,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:chainmail_leggings"
+          }
+        }
+      ]
+    },
+    {
+      "level": 4,
+      "trades": [
+        {
+          "base_price": 14,
+          "experience": 15,
+          "id": "minecraft:sell_enchanted_tool",
+          "item": "minecraft:diamond_leggings",
+          "max_uses": 3,
+          "multiplier": 0.2
+        },
+        {
+          "base_price": 8,
+          "experience": 15,
+          "id": "minecraft:sell_enchanted_tool",
+          "item": "minecraft:diamond_boots",
+          "max_uses": 3,
+          "multiplier": 0.2
+        }
+      ]
+    },
+    {
+      "level": 1,
+      "trades": [
+        {
+          "experience": 2,
+          "id": "minecraft:buy_item",
+          "maxUses": 16,
+          "price": 1,
+          "stack": {
+            "count": 15,
+            "id": "minecraft:coal"
+          }
+        },
+        {
+          "experience": 1,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.2,
+          "price": 7,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:iron_leggings"
+          }
+        },
+        {
+          "experience": 1,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.2,
+          "price": 4,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:iron_boots"
+          }
+        },
+        {
+          "experience": 1,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.2,
+          "price": 5,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:iron_helmet"
+          }
+        },
+        {
+          "experience": 1,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.2,
+          "price": 9,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:iron_chestplate"
+          }
+        }
+      ]
+    },
+    {
+      "level": 3,
+      "trades": [
+        {
+          "experience": 20,
+          "id": "minecraft:buy_item",
+          "maxUses": 12,
+          "price": 1,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:lava_bucket"
+          }
+        },
+        {
+          "experience": 20,
+          "id": "minecraft:buy_item",
+          "maxUses": 12,
+          "price": 1,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:diamond"
+          }
+        },
+        {
+          "experience": 10,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.2,
+          "price": 1,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:chainmail_helmet"
+          }
+        },
+        {
+          "experience": 10,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.2,
+          "price": 4,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:chainmail_chestplate"
+          }
+        },
+        {
+          "experience": 10,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.2,
+          "price": 5,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:shield"
+          }
+        }
+      ]
+    },
+    {
+      "level": 5,
+      "trades": [
+        {
+          "base_price": 8,
+          "experience": 30,
+          "id": "minecraft:sell_enchanted_tool",
+          "item": "minecraft:diamond_helmet",
+          "max_uses": 3,
+          "multiplier": 0.2
+        },
+        {
+          "base_price": 16,
+          "experience": 30,
+          "id": "minecraft:sell_enchanted_tool",
+          "item": "minecraft:diamond_chestplate",
+          "max_uses": 3,
+          "multiplier": 0.2
+        }
+      ]
+    }
+  ]
+}

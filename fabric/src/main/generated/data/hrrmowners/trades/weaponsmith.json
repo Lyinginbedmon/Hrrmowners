@@ -1,0 +1,115 @@
+{
+  "Trades": [
+    {
+      "level": 2,
+      "trades": [
+        {
+          "experience": 10,
+          "id": "minecraft:buy_item",
+          "maxUses": 12,
+          "price": 1,
+          "stack": {
+            "count": 4,
+            "id": "minecraft:iron_ingot"
+          }
+        },
+        {
+          "experience": 5,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.2,
+          "price": 36,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:bell"
+          }
+        }
+      ]
+    },
+    {
+      "level": 4,
+      "trades": [
+        {
+          "experience": 30,
+          "id": "minecraft:buy_item",
+          "maxUses": 12,
+          "price": 1,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:diamond"
+          }
+        },
+        {
+          "base_price": 12,
+          "experience": 15,
+          "id": "minecraft:sell_enchanted_tool",
+          "item": "minecraft:diamond_axe",
+          "max_uses": 3,
+          "multiplier": 0.2
+        }
+      ]
+    },
+    {
+      "level": 1,
+      "trades": [
+        {
+          "experience": 2,
+          "id": "minecraft:buy_item",
+          "maxUses": 16,
+          "price": 1,
+          "stack": {
+            "count": 15,
+            "id": "minecraft:coal"
+          }
+        },
+        {
+          "experience": 1,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.2,
+          "price": 3,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:iron_axe"
+          }
+        },
+        {
+          "base_price": 2,
+          "experience": 1,
+          "id": "minecraft:sell_enchanted_tool",
+          "item": "minecraft:iron_sword",
+          "max_uses": 3,
+          "multiplier": 0.05
+        }
+      ]
+    },
+    {
+      "level": 3,
+      "trades": [
+        {
+          "experience": 20,
+          "id": "minecraft:buy_item",
+          "maxUses": 12,
+          "price": 1,
+          "stack": {
+            "count": 24,
+            "id": "minecraft:flint"
+          }
+        }
+      ]
+    },
+    {
+      "level": 5,
+      "trades": [
+        {
+          "base_price": 8,
+          "experience": 30,
+          "id": "minecraft:sell_enchanted_tool",
+          "item": "minecraft:diamond_sword",
+          "max_uses": 3,
+          "multiplier": 0.2
+        }
+      ]
+    }
+  ]
+}

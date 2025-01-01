@@ -1,0 +1,163 @@
+{
+  "Trades": [
+    {
+      "level": 2,
+      "trades": [
+        {
+          "experience": 10,
+          "id": "minecraft:buy_item",
+          "maxUses": 12,
+          "price": 1,
+          "stack": {
+            "count": 4,
+            "id": "minecraft:book"
+          }
+        },
+        {
+          "enchantments": "#minecraft:tradeable",
+          "experience": 5,
+          "id": "minecraft:enchant_book",
+          "max_level": 2147483647,
+          "min_level": 0
+        },
+        {
+          "experience": 5,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 1,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:lantern"
+          }
+        }
+      ]
+    },
+    {
+      "level": 4,
+      "trades": [
+        {
+          "experience": 30,
+          "id": "minecraft:buy_item",
+          "maxUses": 12,
+          "price": 1,
+          "stack": {
+            "count": 2,
+            "id": "minecraft:writable_book"
+          }
+        },
+        {
+          "enchantments": "#minecraft:tradeable",
+          "experience": 15,
+          "id": "minecraft:enchant_book",
+          "max_level": 2147483647,
+          "min_level": 0
+        },
+        {
+          "experience": 15,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 5,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:clock"
+          }
+        },
+        {
+          "experience": 15,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 4,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:compass"
+          }
+        }
+      ]
+    },
+    {
+      "level": 1,
+      "trades": [
+        {
+          "experience": 2,
+          "id": "minecraft:buy_item",
+          "maxUses": 16,
+          "price": 1,
+          "stack": {
+            "count": 24,
+            "id": "minecraft:paper"
+          }
+        },
+        {
+          "enchantments": "#minecraft:tradeable",
+          "experience": 1,
+          "id": "minecraft:enchant_book",
+          "max_level": 2147483647,
+          "min_level": 0
+        },
+        {
+          "experience": 1,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 9,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:bookshelf"
+          }
+        }
+      ]
+    },
+    {
+      "level": 3,
+      "trades": [
+        {
+          "experience": 20,
+          "id": "minecraft:buy_item",
+          "maxUses": 12,
+          "price": 1,
+          "stack": {
+            "count": 5,
+            "id": "minecraft:ink_sac"
+          }
+        },
+        {
+          "enchantments": "#minecraft:tradeable",
+          "experience": 10,
+          "id": "minecraft:enchant_book",
+          "max_level": 2147483647,
+          "min_level": 0
+        },
+        {
+          "experience": 10,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 1,
+          "stack": {
+            "count": 4,
+            "id": "minecraft:glass"
+          }
+        }
+      ]
+    },
+    {
+      "level": 5,
+      "trades": [
+        {
+          "experience": 30,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 20,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:name_tag"
+          }
+        }
+      ]
+    }
+  ]
+}

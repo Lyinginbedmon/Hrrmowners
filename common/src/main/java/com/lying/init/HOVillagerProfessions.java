@@ -7,7 +7,6 @@ import org.jetbrains.annotations.Nullable;
 
 import com.google.common.collect.ImmutableSet;
 import com.lying.Hrrmowners;
-import com.lying.data.HOTags;
 import com.lying.reference.Reference;
 
 import dev.architectury.registry.registries.DeferredRegister;
@@ -29,7 +28,16 @@ public class HOVillagerProfessions
 	private static int tally = 0;
 	
 	public static final RegistrySupplier<VillagerProfession> NEET	= register("neet", profession(PointOfInterestType.NONE, poiType -> poiType.isIn(HOTags.SURINA_JOB_SITES), null));
-	public static final RegistrySupplier<VillagerProfession> QUEEN	= register("queen", profession(HOPointOfInterestTypes.NEST_KEY, SoundEvents.ENTITY_VILLAGER_WORK_CLERIC));
+	public static final RegistrySupplier<VillagerProfession> QUEEN	= register("queen", profession(HOPointOfInterestTypes.QUEEN_KEY, SoundEvents.ENTITY_VILLAGER_WORK_CLERIC));
+	
+	public static final RegistrySupplier<VillagerProfession> ARMORER		= register("armorer", profession(HOPointOfInterestTypes.ARMORER_KEY, SoundEvents.ENTITY_VILLAGER_WORK_ARMORER));
+	public static final RegistrySupplier<VillagerProfession> BUTCHER		= register("butcher", profession(HOPointOfInterestTypes.BUTCHER_KEY, SoundEvents.ENTITY_VILLAGER_WORK_BUTCHER));
+	public static final RegistrySupplier<VillagerProfession> CARTOGRAPHER	= register("cartographer", profession(HOPointOfInterestTypes.CARTOGRAPHER_KEY, SoundEvents.ENTITY_VILLAGER_WORK_CARTOGRAPHER));
+	public static final RegistrySupplier<VillagerProfession> FARMER			= register("farmer", profession(HOPointOfInterestTypes.FARMER_KEY, SoundEvents.ENTITY_VILLAGER_WORK_FARMER));
+	public static final RegistrySupplier<VillagerProfession> LIBRARIAN		= register("librarian", profession(HOPointOfInterestTypes.LIBRARIAN_KEY, SoundEvents.ENTITY_VILLAGER_WORK_LIBRARIAN));
+	public static final RegistrySupplier<VillagerProfession> MASON			= register("mason", profession(HOPointOfInterestTypes.MASON_KEY, SoundEvents.ENTITY_VILLAGER_WORK_MASON));
+	public static final RegistrySupplier<VillagerProfession> SHEPHERD		= register("shepherd", profession(HOPointOfInterestTypes.SHEPHERD_KEY, SoundEvents.ENTITY_VILLAGER_WORK_SHEPHERD));
+	public static final RegistrySupplier<VillagerProfession> WEAPONSMITH	= register("weaponsmith", profession(HOPointOfInterestTypes.WEAPONSMITH_KEY, SoundEvents.ENTITY_VILLAGER_WORK_WEAPONSMITH));
 	
 	private static RegistrySupplier<VillagerProfession> register(String nameIn, Function<String, VillagerProfession> blockIn)
 	{

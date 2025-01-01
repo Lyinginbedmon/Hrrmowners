@@ -6,6 +6,14 @@
 	// Blocks
 	"block.hrrmowners.sand_firmament": "Sandy Firmament",
 	"block.hrrmowners.surina_nest": "Surina Nest",
+	"block.hrrmowners.surina_blast_furnace": "Blast Furnace",
+	"block.hrrmowners.surina_cartography_table": "Cartography Table",
+	"block.hrrmowners.surina_composter": "Composter",
+	"block.hrrmowners.surina_grindstone": "Grindstone",
+	"block.hrrmowners.surina_lectern": "Lectern",
+	"block.hrrmowners.surina_loom": "Loom",
+	"block.hrrmowners.surina_smoker": "Smoker",
+	"block.hrrmowners.surina_stonecutter": "Stonecutter",
 	// Entities
 	"entity.hrrmowners.surina": "Surina",
 	"entity.hrrmowners.seat": "Seat"

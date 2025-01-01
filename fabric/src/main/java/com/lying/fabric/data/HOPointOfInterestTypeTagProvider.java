@@ -2,15 +2,14 @@ package com.lying.fabric.data;
 
 import java.util.concurrent.CompletableFuture;
 
-import com.lying.data.HOTags;
 import com.lying.init.HOPointOfInterestTypes;
+import com.lying.init.HOTags;
 
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricTagProvider;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.RegistryWrapper.WrapperLookup;
 import net.minecraft.world.poi.PointOfInterestType;
-import net.minecraft.world.poi.PointOfInterestTypes;
 
 public class HOPointOfInterestTypeTagProvider extends FabricTagProvider<PointOfInterestType>
 {
@@ -22,19 +21,14 @@ public class HOPointOfInterestTypeTagProvider extends FabricTagProvider<PointOfI
 	protected void configure(WrapperLookup wrapperLookup)
 	{
 		getOrCreateTagBuilder(HOTags.SURINA_JOB_SITES).add(
-				PointOfInterestTypes.ARMORER, 
-				PointOfInterestTypes.BUTCHER, 
-				PointOfInterestTypes.CARTOGRAPHER, 
-				PointOfInterestTypes.CLERIC, 
-				PointOfInterestTypes.FARMER, 
-				PointOfInterestTypes.FISHERMAN, 
-				PointOfInterestTypes.FLETCHER, 
-				PointOfInterestTypes.LEATHERWORKER, 
-				PointOfInterestTypes.LIBRARIAN, 
-				PointOfInterestTypes.MASON, 
-				PointOfInterestTypes.SHEPHERD, 
-				PointOfInterestTypes.TOOLSMITH, 
-				PointOfInterestTypes.WEAPONSMITH,
-				HOPointOfInterestTypes.NEST_KEY);
+				HOPointOfInterestTypes.QUEEN_KEY,
+				HOPointOfInterestTypes.ARMORER_KEY,
+				HOPointOfInterestTypes.BUTCHER_KEY,
+				HOPointOfInterestTypes.CARTOGRAPHER_KEY,
+				HOPointOfInterestTypes.FARMER_KEY,
+				HOPointOfInterestTypes.LIBRARIAN_KEY,
+				HOPointOfInterestTypes.MASON_KEY,
+				HOPointOfInterestTypes.SHEPHERD_KEY,
+				HOPointOfInterestTypes.WEAPONSMITH_KEY);
 	}
 }

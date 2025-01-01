@@ -1,0 +1,142 @@
+{
+  "Trades": [
+    {
+      "level": 2,
+      "trades": [
+        {
+          "experience": 2,
+          "id": "minecraft:buy_item",
+          "maxUses": 16,
+          "price": 1,
+          "stack": {
+            "count": 15,
+            "id": "minecraft:coal"
+          }
+        },
+        {
+          "experience": 5,
+          "id": "minecraft:sell_item",
+          "maxUses": 16,
+          "multiplier": 0.05,
+          "price": 1,
+          "stack": {
+            "count": 5,
+            "id": "minecraft:cooked_porkchop"
+          }
+        },
+        {
+          "experience": 5,
+          "id": "minecraft:sell_item",
+          "maxUses": 16,
+          "multiplier": 0.05,
+          "price": 1,
+          "stack": {
+            "count": 8,
+            "id": "minecraft:cooked_chicken"
+          }
+        }
+      ]
+    },
+    {
+      "level": 4,
+      "trades": [
+        {
+          "experience": 30,
+          "id": "minecraft:buy_item",
+          "maxUses": 12,
+          "price": 1,
+          "stack": {
+            "count": 10,
+            "id": "minecraft:dried_kelp_block"
+          }
+        }
+      ]
+    },
+    {
+      "level": 1,
+      "trades": [
+        {
+          "experience": 2,
+          "id": "minecraft:buy_item",
+          "maxUses": 16,
+          "price": 1,
+          "stack": {
+            "count": 14,
+            "id": "minecraft:chicken"
+          }
+        },
+        {
+          "experience": 2,
+          "id": "minecraft:buy_item",
+          "maxUses": 16,
+          "price": 1,
+          "stack": {
+            "count": 7,
+            "id": "minecraft:porkchop"
+          }
+        },
+        {
+          "experience": 2,
+          "id": "minecraft:buy_item",
+          "maxUses": 16,
+          "price": 1,
+          "stack": {
+            "count": 4,
+            "id": "minecraft:rabbit"
+          }
+        },
+        {
+          "experience": 1,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 1,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:rabbit_stew"
+          }
+        }
+      ]
+    },
+    {
+      "level": 3,
+      "trades": [
+        {
+          "experience": 20,
+          "id": "minecraft:buy_item",
+          "maxUses": 16,
+          "price": 1,
+          "stack": {
+            "count": 7,
+            "id": "minecraft:mutton"
+          }
+        },
+        {
+          "experience": 20,
+          "id": "minecraft:buy_item",
+          "maxUses": 16,
+          "price": 1,
+          "stack": {
+            "count": 10,
+            "id": "minecraft:beef"
+          }
+        }
+      ]
+    },
+    {
+      "level": 5,
+      "trades": [
+        {
+          "experience": 30,
+          "id": "minecraft:buy_item",
+          "maxUses": 12,
+          "price": 1,
+          "stack": {
+            "count": 10,
+            "id": "minecraft:sweet_berries"
+          }
+        }
+      ]
+    }
+  ]
+}

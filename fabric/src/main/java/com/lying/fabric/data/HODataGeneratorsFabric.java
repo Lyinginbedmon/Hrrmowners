@@ -15,6 +15,7 @@ public class HODataGeneratorsFabric implements DataGeneratorEntrypoint
 		pack.addProvider(HOBlockLootTableProvider::new);
 		pack.addProvider(HOBlockTagProvider::new);
 		pack.addProvider(HOPointOfInterestTypeTagProvider::new);
+		pack.addProvider(HOTradesProvider::new);
 	}
 	
 	public void buildRegistry(RegistryBuilder registryBuilder)

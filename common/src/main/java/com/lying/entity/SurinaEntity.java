@@ -15,6 +15,7 @@ import com.lying.entity.ai.SurinaTaskListProvider;
 import com.lying.entity.village.Village;
 import com.lying.init.HOItems;
 import com.lying.init.HOMemoryModuleTypes;
+import com.lying.init.HOSurinaTrades;
 import com.lying.init.HOVillagerProfessions;
 import com.lying.reference.Reference;
 import com.mojang.datafixers.util.Pair;
@@ -62,9 +63,9 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
-import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.village.TradeOffer;
@@ -130,9 +131,9 @@ public class SurinaEntity extends MerchantEntity implements IVillager
 			SurinaAnimation.BUILD_MAIN, new AnimationState(),
 			SurinaAnimation.BUILD_END, new AnimationState());
 	
-	private static final String[] NAMES = new String[] {
-			"Viktor", "Jayce", "Powder", "Violet", "Vander", "Silco", "Mel", "Heimerdinger", "Sevika", "Caitlyn", "Ekko", "Ambessa", "Singed", "Lest"
-		};
+//	private static final String[] NAMES = new String[] {
+//			"Viktor", "Jayce", "Powder", "Violet", "Vander", "Silco", "Mel", "Heimerdinger", "Sevika", "Caitlyn", "Ekko", "Ambessa", "Singed", "Lest"
+//		};
 	
 	public SurinaEntity(EntityType<? extends MerchantEntity> entityType, World world)
 	{
@@ -140,8 +141,6 @@ public class SurinaEntity extends MerchantEntity implements IVillager
 		((MobNavigation)getNavigation()).setCanPathThroughDoors(true);
 		getNavigation().setCanSwim(true);
 		setVillagerData(getVillagerData().withType(VillagerType.DESERT).withProfession(HOVillagerProfessions.NEET.get()));
-		
-		setCustomName(Text.literal(NAMES[random.nextInt(NAMES.length)]));
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -404,12 +403,23 @@ public class SurinaEntity extends MerchantEntity implements IVillager
 	
 	protected void fillRecipes()
 	{
-		TradeOffers.Factory[] tradeOfferListings;
-		Int2ObjectMap<TradeOffers.Factory[]> int2objectmap1;
+		TradeOffers.Factory[] listings;
+		Int2ObjectMap<TradeOffers.Factory[]> tradeOfferMap;
 		VillagerData villagerData = getVillagerData();
-		Int2ObjectMap<TradeOffers.Factory[]> int2objectmap = getWorld().getEnabledFeatures().contains(FeatureFlags.TRADE_REBALANCE) ? ((int2objectmap1 = TradeOffers.REBALANCED_PROFESSION_TO_LEVELED_TRADE.get(villagerData.getProfession())) != null ? int2objectmap1 : TradeOffers.PROFESSION_TO_LEVELED_TRADE.get(villagerData.getProfession())) : TradeOffers.PROFESSION_TO_LEVELED_TRADE.get(villagerData.getProfession());
-		if(int2objectmap != null && !int2objectmap.isEmpty() && (tradeOfferListings = (TradeOffers.Factory[])int2objectmap.get(villagerData.getLevel())) != null)
-			fillRecipesFromPool(getOffers(), tradeOfferListings, 2);
+		
+		Identifier id = Reference.ModInfo.prefix("neet");
+		Optional<NbtElement> profession = VillagerData.CODEC.encodeStart(NbtOps.INSTANCE, getVillagerData()).resultOrPartial(LOGGER::error);
+		if(profession.isPresent() && profession.get().getType() == NbtElement.COMPOUND_TYPE)
+			id = Identifier.of(((NbtCompound)profession.get()).getString("profession"));
+		
+		Int2ObjectMap<TradeOffers.Factory[]> tradeOptions = null;
+		if(id.getNamespace().equals(Reference.ModInfo.MOD_ID))
+			tradeOptions = HOSurinaTrades.instance().getTradeOptions(villagerData.getProfession());
+		else
+			tradeOptions = getWorld().getEnabledFeatures().contains(FeatureFlags.TRADE_REBALANCE) ? ((tradeOfferMap = TradeOffers.REBALANCED_PROFESSION_TO_LEVELED_TRADE.get(villagerData.getProfession())) != null ? tradeOfferMap : TradeOffers.PROFESSION_TO_LEVELED_TRADE.get(villagerData.getProfession())) : TradeOffers.PROFESSION_TO_LEVELED_TRADE.get(villagerData.getProfession());
+		
+		if(tradeOptions != null && !tradeOptions.isEmpty() && (listings = (TradeOffers.Factory[])tradeOptions.get(villagerData.getLevel())) != null)
+			fillRecipesFromPool(getOffers(), listings, 2);
 	}
 	
 	/** Surina are not spawned by binary reproduction, but spawned in the brood chamber */

@@ -1,0 +1,231 @@
+{
+  "Trades": [
+    {
+      "level": 2,
+      "trades": [
+        {
+          "experience": 10,
+          "id": "minecraft:buy_item",
+          "maxUses": 12,
+          "price": 1,
+          "stack": {
+            "count": 6,
+            "id": "minecraft:pumpkin"
+          }
+        },
+        {
+          "experience": 5,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 1,
+          "stack": {
+            "count": 4,
+            "id": "minecraft:pumpkin_pie"
+          }
+        },
+        {
+          "experience": 5,
+          "id": "minecraft:sell_item",
+          "maxUses": 16,
+          "multiplier": 0.05,
+          "price": 1,
+          "stack": {
+            "count": 4,
+            "id": "minecraft:apple"
+          }
+        }
+      ]
+    },
+    {
+      "level": 4,
+      "trades": [
+        {
+          "experience": 15,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 1,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:cake"
+          }
+        },
+        {
+          "effects": [
+            {
+              "duration": 100,
+              "id": "minecraft:night_vision"
+            }
+          ],
+          "experience": 15,
+          "id": "minecraft:sell_suspicious_stew",
+          "multiplier": 0.05
+        },
+        {
+          "effects": [
+            {
+              "id": "minecraft:jump_boost"
+            }
+          ],
+          "experience": 15,
+          "id": "minecraft:sell_suspicious_stew",
+          "multiplier": 0.05
+        },
+        {
+          "effects": [
+            {
+              "duration": 140,
+              "id": "minecraft:weakness"
+            }
+          ],
+          "experience": 15,
+          "id": "minecraft:sell_suspicious_stew",
+          "multiplier": 0.05
+        },
+        {
+          "effects": [
+            {
+              "duration": 120,
+              "id": "minecraft:blindness"
+            }
+          ],
+          "experience": 15,
+          "id": "minecraft:sell_suspicious_stew",
+          "multiplier": 0.05
+        },
+        {
+          "effects": [
+            {
+              "duration": 280,
+              "id": "minecraft:poison"
+            }
+          ],
+          "experience": 15,
+          "id": "minecraft:sell_suspicious_stew",
+          "multiplier": 0.05
+        },
+        {
+          "effects": [
+            {
+              "duration": 7,
+              "id": "minecraft:saturation"
+            }
+          ],
+          "experience": 15,
+          "id": "minecraft:sell_suspicious_stew",
+          "multiplier": 0.05
+        }
+      ]
+    },
+    {
+      "level": 1,
+      "trades": [
+        {
+          "experience": 2,
+          "id": "minecraft:buy_item",
+          "maxUses": 16,
+          "price": 1,
+          "stack": {
+            "count": 20,
+            "id": "minecraft:wheat"
+          }
+        },
+        {
+          "experience": 2,
+          "id": "minecraft:buy_item",
+          "maxUses": 16,
+          "price": 1,
+          "stack": {
+            "count": 26,
+            "id": "minecraft:potato"
+          }
+        },
+        {
+          "experience": 2,
+          "id": "minecraft:buy_item",
+          "maxUses": 16,
+          "price": 1,
+          "stack": {
+            "count": 22,
+            "id": "minecraft:carrot"
+          }
+        },
+        {
+          "experience": 2,
+          "id": "minecraft:buy_item",
+          "maxUses": 16,
+          "price": 1,
+          "stack": {
+            "count": 15,
+            "id": "minecraft:beetroot"
+          }
+        },
+        {
+          "experience": 1,
+          "id": "minecraft:sell_item",
+          "maxUses": 16,
+          "multiplier": 0.05,
+          "price": 1,
+          "stack": {
+            "count": 6,
+            "id": "minecraft:bread"
+          }
+        }
+      ]
+    },
+    {
+      "level": 3,
+      "trades": [
+        {
+          "experience": 10,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 3,
+          "stack": {
+            "count": 18,
+            "id": "minecraft:cookie"
+          }
+        },
+        {
+          "experience": 20,
+          "id": "minecraft:buy_item",
+          "maxUses": 12,
+          "price": 1,
+          "stack": {
+            "count": 4,
+            "id": "minecraft:melon"
+          }
+        }
+      ]
+    },
+    {
+      "level": 5,
+      "trades": [
+        {
+          "experience": 30,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 3,
+          "stack": {
+            "count": 3,
+            "id": "minecraft:golden_carrot"
+          }
+        },
+        {
+          "experience": 30,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 4,
+          "stack": {
+            "count": 3,
+            "id": "minecraft:glistering_melon_slice"
+          }
+        }
+      ]
+    }
+  ]
+}

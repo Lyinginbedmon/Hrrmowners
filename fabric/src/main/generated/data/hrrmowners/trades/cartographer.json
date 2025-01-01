@@ -1,0 +1,295 @@
+{
+  "Trades": [
+    {
+      "level": 2,
+      "trades": [
+        {
+          "experience": 10,
+          "id": "minecraft:buy_item",
+          "maxUses": 16,
+          "price": 1,
+          "stack": {
+            "count": 11,
+            "id": "minecraft:glass_pane"
+          }
+        },
+        {
+          "decoration": "minecraft:monument",
+          "experience": 5,
+          "id": "minecraft:sell_map",
+          "max_uses": 12,
+          "name_key": "filled_map.monument",
+          "price": 13,
+          "structure": "#minecraft:on_ocean_explorer_maps"
+        }
+      ]
+    },
+    {
+      "level": 4,
+      "trades": [
+        {
+          "experience": 15,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 7,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:item_frame"
+          }
+        },
+        {
+          "experience": 15,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 3,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:white_banner"
+          }
+        },
+        {
+          "experience": 15,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 3,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:blue_banner"
+          }
+        },
+        {
+          "experience": 15,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 3,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:light_blue_banner"
+          }
+        },
+        {
+          "experience": 15,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 3,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:red_banner"
+          }
+        },
+        {
+          "experience": 15,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 3,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:pink_banner"
+          }
+        },
+        {
+          "experience": 15,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 3,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:green_banner"
+          }
+        },
+        {
+          "experience": 15,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 3,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:lime_banner"
+          }
+        },
+        {
+          "experience": 15,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 3,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:gray_banner"
+          }
+        },
+        {
+          "experience": 15,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 3,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:black_banner"
+          }
+        },
+        {
+          "experience": 15,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 3,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:purple_banner"
+          }
+        },
+        {
+          "experience": 15,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 3,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:magenta_banner"
+          }
+        },
+        {
+          "experience": 15,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 3,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:cyan_banner"
+          }
+        },
+        {
+          "experience": 15,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 3,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:brown_banner"
+          }
+        },
+        {
+          "experience": 15,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 3,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:yellow_banner"
+          }
+        },
+        {
+          "experience": 15,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 3,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:orange_banner"
+          }
+        },
+        {
+          "experience": 15,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 3,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:light_gray_banner"
+          }
+        }
+      ]
+    },
+    {
+      "level": 1,
+      "trades": [
+        {
+          "experience": 2,
+          "id": "minecraft:buy_item",
+          "maxUses": 16,
+          "price": 1,
+          "stack": {
+            "count": 24,
+            "id": "minecraft:paper"
+          }
+        },
+        {
+          "experience": 1,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 7,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:map"
+          }
+        }
+      ]
+    },
+    {
+      "level": 3,
+      "trades": [
+        {
+          "experience": 20,
+          "id": "minecraft:buy_item",
+          "maxUses": 12,
+          "price": 1,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:compass"
+          }
+        },
+        {
+          "decoration": "minecraft:mansion",
+          "experience": 10,
+          "id": "minecraft:sell_map",
+          "max_uses": 12,
+          "name_key": "filled_map.mansion",
+          "price": 14,
+          "structure": "#minecraft:on_woodland_explorer_maps"
+        },
+        {
+          "decoration": "minecraft:trial_chambers",
+          "experience": 10,
+          "id": "minecraft:sell_map",
+          "max_uses": 12,
+          "name_key": "filled_map.trial_chambers",
+          "price": 12,
+          "structure": "#minecraft:on_trial_chambers_maps"
+        }
+      ]
+    },
+    {
+      "level": 5,
+      "trades": [
+        {
+          "experience": 30,
+          "id": "minecraft:sell_item",
+          "maxUses": 12,
+          "multiplier": 0.05,
+          "price": 8,
+          "stack": {
+            "count": 1,
+            "id": "minecraft:globe_banner_pattern"
+          }
+        }
+      ]
+    }
+  ]
+}

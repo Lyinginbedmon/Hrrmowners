@@ -1,18 +1,13 @@
 {
   "values": [
-    "minecraft:armorer",
-    "minecraft:butcher",
-    "minecraft:cartographer",
-    "minecraft:cleric",
-    "minecraft:farmer",
-    "minecraft:fisherman",
-    "minecraft:fletcher",
-    "minecraft:leatherworker",
-    "minecraft:librarian",
-    "minecraft:mason",
-    "minecraft:shepherd",
-    "minecraft:toolsmith",
-    "minecraft:weaponsmith",
-    "hrrmowners:nest"
+    "hrrmowners:queen",
+    "hrrmowners:armorer",
+    "hrrmowners:butcher",
+    "hrrmowners:cartographer",
+    "hrrmowners:farmer",
+    "hrrmowners:librarian",
+    "hrrmowners:mason",
+    "hrrmowners:shepherd",
+    "hrrmowners:weaponsmith"
   ]
 }

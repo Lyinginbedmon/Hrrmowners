@@ -1,4 +1,4 @@
-package com.lying.data;
+package com.lying.init;
 
 import com.lying.reference.Reference;
 
