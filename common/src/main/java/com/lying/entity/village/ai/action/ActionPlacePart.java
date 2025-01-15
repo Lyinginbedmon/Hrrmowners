@@ -97,16 +97,13 @@ public class ActionPlacePart extends Action
 			BlockRotation[] rotations = BlockRotation.values();
 			BlockRotation baseRotation = rotations[rand.nextInt(rotations.length)];
 			Connector connector = place.get();
-//			int index = 0, count = options.size();
 			for(StructurePoolElement option : options)
 			{
-//				LOGGER.info(" # Evaluating {} structure {} of {}", type.asString(), ++index, count);
 				for(int i=0; i<rotations.length; i++)
 				{
 					BlockRotation rotation = rotations[(baseRotation.ordinal() + i)%rotations.length];
 					validateAgainstModel(option, type, connector, rotation, model, world).ifPresent(s -> 
 					{
-//						LOGGER.info(" # # Permutation viable with {} rotation", rotation.asString());
 						partToAdd = Optional.of(s);
 						viable.add(copy());
 					});
@@ -130,10 +127,8 @@ public class ActionPlacePart extends Action
 		BlockRotation baseRotation = rotations[rand.nextInt(rotations.length)];
 		
 		Connector connector = place.get();
-//		int index = 0, count = options.size();
 		for(StructurePoolElement option : options)
 		{
-//			LOGGER.info(" # Evaluating {} structure {} of {}", type.asString(), ++index, count);
 			for(int i=0; i<rotations.length; i++)
 			{
 				BlockRotation rotation = rotations[(baseRotation.ordinal() + i)%rotations.length];

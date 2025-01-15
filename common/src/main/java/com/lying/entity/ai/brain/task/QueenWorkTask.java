@@ -12,9 +12,7 @@ public class QueenWorkTask extends SurinaWorkTask
 {
 	protected void performAdditionalWork(ServerWorld world, SurinaEntity entity)
 	{
-		// TODO Dismount non-seat vehicles
-		
-		if(entity.hasVehicle())
+		if(entity.isSittingInNest())
 			return;
 		
 		Brain<SurinaEntity> brain = entity.getBrain();
@@ -22,6 +20,9 @@ public class QueenWorkTask extends SurinaWorkTask
 		{
 			if(entity.getWorld().getRegistryKey() != memory.dimension())
 				return;
+			
+			if(entity.hasVehicle())
+				entity.dismountVehicle();
 			
 			BlockPos pos = memory.pos();
 			world.getBlockEntity(pos, HOBlockEntityTypes.NEST.get()).ifPresent(tile -> tile.tryToSeat(entity));

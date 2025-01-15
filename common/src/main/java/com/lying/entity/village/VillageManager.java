@@ -105,7 +105,6 @@ public class VillageManager
 				SurinaEntity queen = HOEntityTypes.SURINA.get().create(world);
 				queen.setPos(block.getX(), block.getY(), block.getZ());
 				queen.setVillagerData(queen.getVillagerData().withProfession(HOVillagerProfessions.QUEEN.get()).withLevel(2));
-				
 				queen.getBrain().remember(MemoryModuleType.JOB_SITE, new GlobalPos(world.getRegistryKey(), block));
 				
 				world.spawnEntity(queen);

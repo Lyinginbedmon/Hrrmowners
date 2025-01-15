@@ -12,7 +12,8 @@ import net.minecraft.util.math.GlobalPos;
 
 public class HOATaskManager
 {
-	public static final MemoryModuleType<GlobalPos> MODULE = HOMemoryModuleTypes.HOA_TASK.get();
+	public static final MemoryModuleType<Boolean> RECEIVER_MODULE = HOMemoryModuleTypes.RECEIVING_TASK.get();
+	public static final MemoryModuleType<GlobalPos> TASK_MODULE = HOMemoryModuleTypes.HOA_TASK.get();
 	
 	private final SurinaEntity entity;
 	
@@ -40,13 +41,13 @@ public class HOATaskManager
 		
 		if(posIn == null)
 		{
-			entity.getBrain().forget(MODULE);
-//			SurinaEntity.LOGGER.info(" * {} {} task cleared, success {}", entity.getWorld().isClient() ? "CLIENT" : "SERVER", entity.getName().getString(), hasHOATask());
+			entity.getBrain().forget(TASK_MODULE);
+			entity.getBrain().forget(RECEIVER_MODULE);
 		}
 		else
 		{
-			entity.getBrain().remember(MODULE, posIn);
-//			SurinaEntity.LOGGER.info(" * {} {} supervision requested at {}, success {}", entity.getWorld().isClient() ? "CLIENT" : "SERVER", entity.getName().getString(), posIn.pos().toShortString(), hasHOATask());
+			entity.getBrain().remember(RECEIVER_MODULE, true);
+			entity.getBrain().remember(TASK_MODULE, posIn);
 		}
 		
 		return true;
@@ -54,7 +55,11 @@ public class HOATaskManager
 	
 	public boolean hasHOATask()
 	{
-		Optional<GlobalPos> memory = entity.getBrain().getOptionalMemory(MODULE);
+		Optional<Boolean> mem1 = entity.getBrain().getOptionalMemory(RECEIVER_MODULE);
+		if(mem1.isPresent() && mem1.get())
+			return true;
+		
+		Optional<GlobalPos> memory = entity.getBrain().getOptionalMemory(TASK_MODULE);
 		return memory.isPresent() && memory.get() != null;
 	}
 	
@@ -67,12 +72,11 @@ public class HOATaskManager
 	@Nullable
 	public GlobalPos getHOATask()
 	{
-		return entity.getBrain().getOptionalMemory(MODULE).orElse(null);
+		return entity.getBrain().getOptionalMemory(TASK_MODULE).orElse(null);
 	}
 	
 	public void markHOATaskCompleted()
 	{
 		setHOATask(null);
-//		SurinaEntity.LOGGER.info(" * {} {} HOA task completed, success {}", entity.getWorld().isClient() ? "CLIENT" : "SERVER", entity.getName().getString(), !hasHOATask());
 	}
 }

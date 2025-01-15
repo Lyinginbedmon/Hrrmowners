@@ -37,7 +37,7 @@ public class DoHOATask extends MultiTickTask<SurinaEntity>
 	
 	public DoHOATask(int maxDist)
 	{
-		super(ImmutableMap.of(HOMemoryModuleTypes.HOA_TASK.get(), MemoryModuleState.VALUE_PRESENT), TOTAL_TIME);
+		super(ImmutableMap.of(HOMemoryModuleTypes.HOA_TASK.get(), MemoryModuleState.VALUE_PRESENT, HOMemoryModuleTypes.RECEIVING_TASK.get(), MemoryModuleState.VALUE_ABSENT), TOTAL_TIME);
 		maxDistance = maxDist;
 	}
 	

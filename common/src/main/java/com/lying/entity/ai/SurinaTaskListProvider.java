@@ -9,7 +9,9 @@ import com.google.common.collect.Lists;
 import com.lying.entity.SurinaEntity;
 import com.lying.entity.ai.brain.task.DoHOATask;
 import com.lying.entity.ai.brain.task.ProfessionTasks;
+import com.lying.entity.ai.brain.task.QueenSpawnBabyTask;
 import com.lying.entity.ai.brain.task.QueenWorkTask;
+import com.lying.entity.ai.brain.task.ReceiveHOATask;
 import com.lying.entity.ai.brain.task.SurinaWorkTask;
 import com.lying.init.HOEntityTypes;
 import com.lying.init.HOVillagerProfessions;
@@ -93,6 +95,7 @@ public class SurinaTaskListProvider
 		tasks.add(Pair.of(0, ForgetCompletedPointOfInterestTask.create(profession.heldWorkstation(), MemoryModuleType.JOB_SITE)));
 		tasks.add(Pair.of(0, ForgetCompletedPointOfInterestTask.create(profession.acquirableWorkstation(), MemoryModuleType.POTENTIAL_JOB_SITE)));
 		tasks.add(Pair.of(0, DoHOATask.createGoToHOATask()));
+		tasks.add(Pair.of(0, new ReceiveHOATask()));
 		tasks.add(Pair.of(0, new DoHOATask(2)));
 		tasks.add(Pair.of(1, new WanderAroundTask()));
 		
@@ -127,11 +130,24 @@ public class SurinaTaskListProvider
 		 	 * Pair.of(3, new GiveGiftsToHeroTask(100)), 
 		 	 * Pair.of(99, ScheduleActivityTask.create()));
 		 */
-		SurinaWorkTask villagerWorkTask = new SurinaWorkTask();
+		
 		if(profession == HOVillagerProfessions.QUEEN.get())
-			villagerWorkTask = new QueenWorkTask();
-		if(profession == VillagerProfession.FARMER)
-//			villagerWorkTask = new FarmerWorkTask()
+			return ImmutableList.of(
+				SurinaBrainTasks.createBusyFollowTask(),
+				Pair.of(5, new RandomTask(ImmutableList.of(
+					Pair.of(new QueenSpawnBabyTask(), 10),
+					Pair.of(new QueenWorkTask(), 7),
+					Pair.of(GoToIfNearbyTask.create(MemoryModuleType.JOB_SITE, JOB_WALKING_SPEED, 4), 2),
+					Pair.of(GoToNearbyPositionTask.create(MemoryModuleType.JOB_SITE, JOB_WALKING_SPEED, 1, 10), 5),
+					Pair.of(SurinaBrainTasks.createGoToSecondaryPosition(MemoryModuleType.SECONDARY_JOB_SITE, speed, 1, 6, MemoryModuleType.JOB_SITE), 5)
+					))),
+				Pair.of(10, FindInteractionTargetTask.create(EntityType.PLAYER, 4)),
+				Pair.of(2, SurinaBrainTasks.createWalkTowards(MemoryModuleType.JOB_SITE, speed, 9, 100, 1200)),
+				Pair.of(99, ScheduleActivityTask.create()));
+		
+		SurinaWorkTask villagerWorkTask = new SurinaWorkTask();
+		if(profession == HOVillagerProfessions.FARMER.get())
+//			villagerWorkTask = new FarmerWorkTask()	// FIXME Implement mushroom farming
 			;
 		
 		return ImmutableList.of(

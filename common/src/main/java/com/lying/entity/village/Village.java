@@ -157,6 +157,8 @@ public class Village
 		// Periodically evaluate goals and update plan if necessary
 		if(hoa.hasPlan())
 			hoa.tickPlan(world, this);
+		else if(world.getRandom().nextInt(Reference.Values.PLAN_RATE) == 0)
+			tryPlan(world);
 	}
 	
 	public void registerResident(SurinaEntity entity)

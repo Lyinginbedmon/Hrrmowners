@@ -1,5 +1,7 @@
 package com.lying.client.model;
 
+import org.joml.Vector3f;
+
 import com.lying.client.renderer.SurinaAnimations;
 import com.lying.entity.SurinaEntity;
 import com.lying.entity.SurinaEntity.SurinaAnimation;
@@ -16,17 +18,18 @@ import net.minecraft.client.render.entity.model.CrossbowPosing;
 import net.minecraft.client.render.entity.model.EntityModelPartNames;
 import net.minecraft.client.render.entity.model.ModelWithArms;
 import net.minecraft.client.render.entity.model.ModelWithHead;
-import net.minecraft.client.render.entity.model.SinglePartEntityModel;
+import net.minecraft.client.render.entity.model.SinglePartEntityModelWithChildTransform;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.Arm;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.MathHelper;
 
-public class SurinaEntityModel<T extends SurinaEntity> extends SinglePartEntityModel<T> implements ModelWithArms, ModelWithHead
+public class SurinaEntityModel<T extends SurinaEntity> extends SinglePartEntityModelWithChildTransform<T> implements ModelWithArms, ModelWithHead
 {
 	private static final String ANTENNA_RIGHT = "right_antenna";
 	private static final String ANTENNA_LEFT = "left_antenna";
+	private static final float BIG_HEAD = 0.5F;
 	private final ModelPart root;
 	private final ModelPart rightAntenna, leftAntenna;
 	private final ModelPart head, body, rightArm, leftArm, rightLeg, leftLeg;
@@ -41,6 +44,7 @@ public class SurinaEntityModel<T extends SurinaEntity> extends SinglePartEntityM
 	
 	public SurinaEntityModel(ModelPart obj)
 	{
+		super(0.5F, 25F);
 		root = obj.getChild(EntityModelPartNames.ROOT);
 		head = root.getChild(EntityModelPartNames.HEAD);
 		rightAntenna = head.getChild(ANTENNA_RIGHT);
@@ -61,7 +65,7 @@ public class SurinaEntityModel<T extends SurinaEntity> extends SinglePartEntityM
 		ModelPartData root = modelPartData.addChild(EntityModelPartNames.ROOT, ModelPartBuilder.create(), ModelTransform.pivot(0.0F, 24.0F, 0.0F));
 		
 		ModelPartData head = root.addChild(EntityModelPartNames.HEAD, ModelPartBuilder.create(), ModelTransform.pivot(0.0F, -24.75F, -2.75F));
-			head.addChild("cube_r1", ModelPartBuilder.create().uv(0, 0).cuboid(-5.0F, -7.0F, -3.0F, 6.0F, 7.0F, 6.0F, dilation), ModelTransform.of(2.0F, 0.4371F, -0.3485F, 0.3054F, 0.0F, 0.0F));
+			head.addChild("head", ModelPartBuilder.create().uv(0, 0).cuboid(-5.0F, -7.0F, -3.0F, 6.0F, 7.0F, 6.0F, dilation), ModelTransform.of(2.0F, 0.4371F, -0.3485F, 0.3054F, 0.0F, 0.0F));
 			head.addChild(ANTENNA_LEFT, ModelPartBuilder.create().uv(24, 0).mirrored().cuboid(-1.0F, -9.0F, 0.0F, 3.0F, 9.0F, 0.0F, dilation).mirrored(false), ModelTransform.of(1.25F, -6.5F, -1.25F, -0.9997F, 0.1103F, 0.0706F));
 			head.addChild(ANTENNA_RIGHT, ModelPartBuilder.create().uv(24, 0).cuboid(-2.0F, -9.0F, 0.0F, 3.0F, 9.0F, 0.0F, dilation), ModelTransform.of(-1.25F, -6.5F, -1.25F, -0.9997F, -0.1103F, -0.0706F));
 		
@@ -126,6 +130,10 @@ public class SurinaEntityModel<T extends SurinaEntity> extends SinglePartEntityM
 	public void setAngles(T entity, float limbSwing, float limbSwingAmount, float ageInTicks, float headYaw, float headPitch)
 	{
 		getPart().traverse().forEach(part -> part.resetTransform());
+		
+		if(this.child)
+			this.head.scale(new Vector3f(BIG_HEAD,BIG_HEAD,BIG_HEAD));
+		
 		if(entity.isPlayingAnimation(SurinaAnimation.IDLE) || !entity.isPlayingAnimation())
 			doIdleAnimation(entity, limbSwing, limbSwingAmount, ageInTicks, headYaw, headPitch);
 		else
@@ -133,6 +141,7 @@ public class SurinaEntityModel<T extends SurinaEntity> extends SinglePartEntityM
 			this.updateAnimation(entity.getAnimation(SurinaAnimation.BUILD_START), SurinaAnimations.build_start, entity.age);
 			this.updateAnimation(entity.getAnimation(SurinaAnimation.BUILD_MAIN), SurinaAnimations.build_main, entity.age);
 			this.updateAnimation(entity.getAnimation(SurinaAnimation.BUILD_END), SurinaAnimations.build_end, entity.age);
+			this.updateAnimation(entity.getAnimation(SurinaAnimation.RECEIVING_TASK), SurinaAnimations.receive_task, entity.age);
 		}
 		
 		if(isSitting)

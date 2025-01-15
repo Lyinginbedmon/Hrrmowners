@@ -13,6 +13,8 @@ import com.google.common.collect.ImmutableSet;
 import com.lying.Hrrmowners;
 import com.lying.entity.ai.SurinaTaskListProvider;
 import com.lying.entity.village.Village;
+import com.lying.init.HOBlocks;
+import com.lying.init.HOEntityTypes;
 import com.lying.init.HOItems;
 import com.lying.init.HOMemoryModuleTypes;
 import com.lying.init.HOSurinaTrades;
@@ -116,7 +118,8 @@ public class SurinaEntity extends MerchantEntity implements IVillager
 				MemoryModuleType.LAST_SLEPT, 
 				MemoryModuleType.LAST_WOKEN, 
 				MemoryModuleType.LAST_WORKED_AT_POI, 
-				MemoryModuleType.GOLEM_DETECTED_RECENTLY, 
+				MemoryModuleType.GOLEM_DETECTED_RECENTLY,
+				HOMemoryModuleTypes.RECEIVING_TASK.get(),
 				HOMemoryModuleTypes.HOA_TASK.get()});
 	private static final ImmutableList<SensorType<? extends Sensor<? super SurinaEntity>>> SENSORS = ImmutableList.of(SensorType.NEAREST_LIVING_ENTITIES, SensorType.NEAREST_PLAYERS, SensorType.NEAREST_ITEMS, SensorType.NEAREST_BED, SensorType.HURT_BY, SensorType.VILLAGER_HOSTILES, SensorType.VILLAGER_BABIES, SensorType.GOLEM_DETECTED);
 	public static final Map<MemoryModuleType<GlobalPos>, BiPredicate<SurinaEntity, RegistryEntry<PointOfInterestType>>> POINTS_OF_INTEREST = ImmutableMap.of(MemoryModuleType.HOME, (villager, arg2) -> arg2.matchesKey(PointOfInterestTypes.HOME), MemoryModuleType.JOB_SITE, (villager, arg2) -> villager.getVillagerData().getProfession().heldWorkstation().test((RegistryEntry<PointOfInterestType>)arg2), MemoryModuleType.POTENTIAL_JOB_SITE, (villager, arg2) -> HOVillagerProfessions.IS_SURINA_JOB_SITE.test((RegistryEntry<PointOfInterestType>)arg2), MemoryModuleType.MEETING_POINT, (villager, arg2) -> arg2.matchesKey(PointOfInterestTypes.MEETING));
@@ -129,11 +132,8 @@ public class SurinaEntity extends MerchantEntity implements IVillager
 			SurinaAnimation.IDLE, new AnimationState(),
 			SurinaAnimation.BUILD_START, new AnimationState(),
 			SurinaAnimation.BUILD_MAIN, new AnimationState(),
-			SurinaAnimation.BUILD_END, new AnimationState());
-	
-//	private static final String[] NAMES = new String[] {
-//			"Viktor", "Jayce", "Powder", "Violet", "Vander", "Silco", "Mel", "Heimerdinger", "Sevika", "Caitlyn", "Ekko", "Ambessa", "Singed", "Lest"
-//		};
+			SurinaAnimation.BUILD_END, new AnimationState(),
+			SurinaAnimation.RECEIVING_TASK, new AnimationState());
 	
 	public SurinaEntity(EntityType<? extends MerchantEntity> entityType, World world)
 	{
@@ -423,7 +423,30 @@ public class SurinaEntity extends MerchantEntity implements IVillager
 	}
 	
 	/** Surina are not spawned by binary reproduction, but spawned in the brood chamber */
-	public PassiveEntity createChild(ServerWorld var1, PassiveEntity var2) { return null; }
+	public PassiveEntity createChild(ServerWorld world, PassiveEntity parent)
+	{
+		SurinaEntity child = new SurinaEntity(HOEntityTypes.SURINA.get(), world);
+		VillagerData villagerData = getVillagerData();
+		VillagerData childData = child.getVillagerData().withType(villagerData.getType());
+		if(world.getRandom().nextInt(Reference.Values.NEET_RATE) == 0)
+			childData = childData.withProfession(HOVillagerProfessions.NEET.get());
+		child.setVillagerData(childData);
+		
+		child.setBreedingAge(-24000);
+		if(hasVillage())
+			child.setVillage(villageID());
+		return child;
+	}
+	
+	public boolean isSittingInNest()
+	{
+		if(!hasVehicle() || getVehicle().getType() != HOEntityTypes.SEAT.get())
+			return false;
+		
+		SeatEntity seat = (SeatEntity)getVehicle();
+		Optional<BlockPos> block = seat.attachedBlock();
+		return block.isPresent() && getWorld().getBlockState(block.get()).isOf(HOBlocks.NEST.get());
+	}
 	
 	protected SoundEvent getAmbientSound()
 	{
@@ -447,6 +470,8 @@ public class SurinaEntity extends MerchantEntity implements IVillager
 		if(existing.getProfession() != villagerData.getProfession())
 			this.offers = null;
 		getDataTracker().set(VILLAGER_DATA, villagerData);
+		if(!getEntityWorld().isClient())
+			reinitializeBrain((ServerWorld)getEntityWorld());
 	}
 	
 	public void onDeath(DamageSource damageSource)
@@ -513,7 +538,8 @@ public class SurinaEntity extends MerchantEntity implements IVillager
 		IDLE,
 		BUILD_START,
 		BUILD_MAIN,
-		BUILD_END;
+		BUILD_END,
+		RECEIVING_TASK;
 		
 		public static SurinaAnimation byIndex(int index) { return SurinaAnimation.values()[index%SurinaAnimation.values().length]; }
 	}

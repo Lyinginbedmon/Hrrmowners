@@ -29,5 +29,7 @@ public class Reference
 		public static final double SPEED_OF_SOUND		= 343D;
 		
 		public static final int VILLAGE_TICK_RATE		= TICKS_PER_SECOND * 3;
+		public static final int PLAN_RATE				= TICKS_PER_MINUTE * 15;
+		public static final int NEET_RATE				= 8;
 	}
 }
